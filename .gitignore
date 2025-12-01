@@ -60,5 +60,4 @@ dkms.conf
 
 
 # Binary and temporary build files
-build/
-bin/
+main
