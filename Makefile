@@ -2,8 +2,8 @@
 CC = gcc
 
 # Project files
-SRC = src/main.c
-OBJ = $(SRC:.c=.o)
+SRCS = src/main.c src/block.c
+OBJ = $(SRCS:.c=.o)
 EXEC = main
 
 # Raylib paths
