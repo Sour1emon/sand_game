@@ -1,7 +1,11 @@
 #include <raylib.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 #include "block.h"
+#include "rng.h"
 
 const int PHYSICS_FPS = 20;
 const int RENDER_FPS = 60;
@@ -26,7 +30,7 @@ void initWorldState(Block world[WORLD_HEIGHT][WORLD_WIDTH]) {
 }
 
 int main() {
-
+  pcg32_init((uint64_t)time(NULL));
   // Initialize world
   Block world[WORLD_HEIGHT][WORLD_WIDTH];
   initWorldState(world);
@@ -76,7 +80,7 @@ int main() {
                                          ? IsPassible(world[y - 1][x + 1].type)
                                          : false;
               if (isLeftPassible && isRightPassible) {
-                bool slideLeft = false; // TODO: Make this random
+                bool slideLeft = pcg32_bool();
                 if (slideLeft) {
                   Block leftBlock = world[y - 1][x - 1];
                   world[y - 1][x - 1] = block;
@@ -92,7 +96,6 @@ int main() {
                 world[y - 1][x - 1] = block;
                 world[y][x] = leftBlock;
                 continue;
-
               } else if (isRightPassible) {
                 Block rightBlock = world[y - 1][x + 1];
                 world[y - 1][x + 1] = block;

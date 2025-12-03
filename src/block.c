@@ -3,7 +3,6 @@
 bool HasGravity(enum BlockType type) {
   switch (type) {
   case SAND:
-  case ROCK:
     return true;
   default:
     return false;

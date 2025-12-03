@@ -2,7 +2,7 @@
 CC = gcc
 
 # Project files
-SRCS = src/main.c src/block.c
+SRCS = src/main.c src/block.c src/rng.c
 OBJ = $(SRCS:.c=.o)
 EXEC = main
 
