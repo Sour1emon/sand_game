@@ -31,10 +31,10 @@ bool CanSlide(enum BlockType type) {
   }
 }
 
-// (-5% to +5%)
+// (-4% to +4%)
 const int LIGHTNESS_VARIATION = 4;
 
-// (-3% to +3%)
+// (-2% to +2%)
 const int SATURATION_VARIATION = 2;
 
 Color GenBlockColor(enum BlockType type) {

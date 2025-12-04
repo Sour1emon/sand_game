@@ -31,6 +31,8 @@ void initWorldState(Block world[WORLD_HEIGHT][WORLD_WIDTH]) {
 }
 
 int main() {
+  enum BlockType selectedBlockType = SAND;
+
   pcg32_init((uint64_t)time(NULL));
   // Initialize world
   Block world[WORLD_HEIGHT][WORLD_WIDTH];
@@ -73,13 +75,16 @@ int main() {
               }
             }
 
-            // Sliding
+            // Sliding diagonally
             if (CanSlide(block.type)) {
               bool isLeftPassible =
-                  x > 0 ? IsPassible(world[y - 1][x - 1].type) : false;
-              bool isRightPassible = x < WORLD_WIDTH - 1
-                                         ? IsPassible(world[y - 1][x + 1].type)
-                                         : false;
+                  x > 0 ? IsPassible(world[y - 1][x - 1].type) &&
+                              IsPassible(world[y][x - 1].type)
+                        : false;
+              bool isRightPassible =
+                  x < WORLD_WIDTH - 1 ? IsPassible(world[y - 1][x + 1].type) &&
+                                            IsPassible(world[y][x + 1].type)
+                                      : false;
               if (isLeftPassible && isRightPassible) {
                 bool slideLeft = pcg32_bool();
                 if (slideLeft) {
@@ -121,9 +126,21 @@ int main() {
         int gridY = WORLD_HEIGHT - mouseY / PX_SCALE - 1;
         if (gridX >= 0 && gridX < WORLD_WIDTH && gridY >= 0 &&
             gridY < WORLD_HEIGHT) {
-          world[gridY][gridX] =
-              (Block){.type = SAND, .color = GenBlockColor(SAND)};
+
+          // Make sure the color does not change randomly
+          if (world[gridY][gridX].type != selectedBlockType) {
+            world[gridY][gridX] =
+                (Block){.type = selectedBlockType,
+                        .color = GenBlockColor(selectedBlockType)};
+          }
         }
+      }
+    }
+
+    if (IsKeyPressed(KEY_A)) {
+      selectedBlockType += 1;
+      if (selectedBlockType == BLOCK_TYPES_COUNT) {
+        selectedBlockType = 0;
       }
     }
 
