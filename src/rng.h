@@ -11,5 +11,6 @@ uint32_t rotr32(uint32_t x, unsigned r);
 
 uint32_t pcg32(void);
 bool pcg32_bool(void);
+float pcg32_float(void);
 
 void pcg32_init(uint64_t seed);

@@ -1,3 +1,4 @@
+#include <err.h>
 #include <raylib.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -120,7 +121,8 @@ int main() {
         int gridY = WORLD_HEIGHT - mouseY / PX_SCALE - 1;
         if (gridX >= 0 && gridX < WORLD_WIDTH && gridY >= 0 &&
             gridY < WORLD_HEIGHT) {
-          world[gridY][gridX] = (Block){.type = SAND};
+          world[gridY][gridX] =
+              (Block){.type = SAND, .color = GenBlockColor(SAND)};
         }
       }
     }
@@ -136,13 +138,13 @@ int main() {
         case AIR:
           break;
         case SAND:
-          DrawRectangle(screenX, screenY, PX_SCALE, PX_SCALE,
-                        (Color){194, 178, 128, 255});
-          break;
         case ROCK:
-          DrawRectangle(screenX, screenY, PX_SCALE, PX_SCALE,
-                        (Color){64, 64, 64, 255});
+          DrawRectangle(screenX, screenY, PX_SCALE, PX_SCALE, block.color);
           break;
+        case BLOCK_TYPES_COUNT:
+          // This branch should never be reached
+          errx(EXIT_FAILURE, "Found block of type BLOCK_TYPES_COUNT which "
+                             "should never happen");
         }
       }
     }

@@ -13,6 +13,10 @@ uint32_t pcg32(void) {
 
 bool pcg32_bool(void) { return pcg32() & 1; }
 
+const float TWO_POW_32 = 1ULL << 32; // 2^32 as a float
+
+float pcg32_float(void) { return (float)pcg32() / TWO_POW_32; }
+
 void pcg32_init(uint64_t seed) {
   state = seed + increment;
   (void)pcg32();

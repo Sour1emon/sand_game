@@ -2,7 +2,7 @@
 CC = gcc
 
 # Project files
-SRCS = src/main.c src/block.c src/rng.c
+SRCS = src/main.c src/block.c src/rng.c src/utils.c
 OBJ = $(SRCS:.c=.o)
 EXEC = main
 
@@ -11,7 +11,7 @@ RAYLIB_INC = /opt/homebrew/include
 RAYLIB_LIB = /opt/homebrew/lib
 
 # Compilation flags
-CFLAGS = -I$(RAYLIB_INC) -Wall -std=c11
+CFLAGS = -I$(RAYLIB_INC) -Wall -Wextra -std=c99
 LDFLAGS = -L$(RAYLIB_LIB) -lraylib -lm -lpthread -ldl \
           -framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo
 

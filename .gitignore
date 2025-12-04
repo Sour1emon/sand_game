@@ -61,3 +61,7 @@ dkms.conf
 
 # Binary and temporary build files
 main
+
+# Other files to ignore
+.cache/
+compile_commands.json
