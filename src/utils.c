@@ -1,7 +1,6 @@
 #include "utils.h"
 #include <math.h>
 
-// Clamp helper function
 float fclampf(float value, float min, float max) {
   if (value < min)
     return min;
@@ -10,7 +9,7 @@ float fclampf(float value, float min, float max) {
   return value;
 }
 
-// Helper functions to convert between RGB and HSL
+// Convert from RGB to HSL
 void RGBtoHSL(Color rgb, float *h, float *s, float *l) {
   float r = rgb.r / 255.0f;
   float g = rgb.g / 255.0f;
@@ -55,6 +54,7 @@ float HueToRGB(float p, float q, float t) {
   return p;
 }
 
+// Convert from HSL to RGB
 Color HSLtoRGB(float h, float s, float l) {
   Color rgb;
 

@@ -8,19 +8,22 @@
 #include "block.h"
 #include "rng.h"
 
-const int PHYSICS_FPS = 20;
-const int RENDER_FPS = 60;
+// Better than using define to make these actually constant
+enum {
+  PHYSICS_FPS = 20,
+  RENDER_FPS = 60,
 
-const int WORLD_WIDTH = 20;
-const int WORLD_HEIGHT = 20;
-const int PX_SCALE = 30;
+  WORLD_WIDTH = 20,
+  WORLD_HEIGHT = 20,
+  PX_SCALE = 30,
 
-const int SCREEN_WIDTH = WORLD_WIDTH * PX_SCALE;
-const int SCREEN_HEIGHT = WORLD_HEIGHT * PX_SCALE;
+  SCREEN_WIDTH = WORLD_WIDTH * PX_SCALE,
+  SCREEN_HEIGHT = WORLD_HEIGHT * PX_SCALE
+};
 
 #define GRID_LINE_COLOR ((Color){50, 50, 50, 255})
 
-#define AIR_BLOCK ((Block){.type = AIR})
+#define AIR_BLOCK ((Block){.type = AIR, .color = {0, 0, 0, 0}})
 
 void initWorldState(Block world[WORLD_HEIGHT][WORLD_WIDTH]) {
   for (int y = 0; y < WORLD_HEIGHT; y++) {
@@ -30,12 +33,89 @@ void initWorldState(Block world[WORLD_HEIGHT][WORLD_WIDTH]) {
   }
 }
 
+Block world[WORLD_HEIGHT][WORLD_WIDTH];
+
+void worldTick() {
+
+  bool processed[WORLD_HEIGHT][WORLD_WIDTH] = {false};
+
+  // First gravity tick
+  for (unsigned int y = 0; y < WORLD_HEIGHT; y++) {
+    for (unsigned int x = 0; x < WORLD_WIDTH; x++) {
+      Block block = world[y][x];
+      if (y > 0) {
+
+        // Falling
+        if (HasGravity(block.type)) {
+          if (IsPassible(world[y - 1][x].type)) {
+            Block below = world[y - 1][x];
+            world[y - 1][x] = block;
+            world[y][x] = below;
+            processed[y - 1][x] = true;
+            processed[y][x] = true;
+            continue;
+          }
+        }
+      }
+    }
+  }
+
+  // Sliding diagonally
+  for (unsigned int y = 0; y < WORLD_HEIGHT; y++) {
+    for (unsigned int x = 0; x < WORLD_WIDTH; x++) {
+      if (processed[y][x]) {
+        continue;
+      }
+      Block block = world[y][x];
+      if (y > 0) {
+        if (CanSlide(block.type)) {
+          bool isLeftPassible = x > 0 ? IsPassible(world[y - 1][x - 1].type) &&
+                                            IsPassible(world[y][x - 1].type)
+                                      : false;
+          bool isRightPassible = x < WORLD_WIDTH - 1
+                                     ? IsPassible(world[y - 1][x + 1].type) &&
+                                           IsPassible(world[y][x + 1].type)
+                                     : false;
+          if (isLeftPassible && isRightPassible) {
+            bool slideLeft = pcg32_bool();
+            if (slideLeft) {
+              Block leftBlock = world[y - 1][x - 1];
+              world[y - 1][x - 1] = block;
+              world[y][x] = leftBlock;
+            } else {
+              Block rightBlock = world[y - 1][x + 1];
+              world[y - 1][x + 1] = block;
+              world[y][x] = rightBlock;
+            }
+            processed[y - 1][x + (slideLeft ? -1 : 1)] = true;
+            processed[y][x] = true;
+            continue;
+          } else if (isLeftPassible) {
+            Block leftBlock = world[y - 1][x - 1];
+            world[y - 1][x - 1] = block;
+            world[y][x] = leftBlock;
+            processed[y - 1][x - 1] = true;
+            processed[y][x] = true;
+            continue;
+          } else if (isRightPassible) {
+            Block rightBlock = world[y - 1][x + 1];
+            world[y - 1][x + 1] = block;
+            world[y][x] = rightBlock;
+            processed[y - 1][x + 1] = true;
+            processed[y][x] = true;
+            continue;
+          }
+        }
+      }
+    }
+  }
+}
+
 int main() {
   enum BlockType selectedBlockType = SAND;
 
   pcg32_init((uint64_t)time(NULL));
   // Initialize world
-  Block world[WORLD_HEIGHT][WORLD_WIDTH];
   initWorldState(world);
 
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Sand Game");
@@ -53,65 +133,13 @@ int main() {
     int mouseX = GetMouseX();
     int mouseY = GetMouseY();
 
-    // The 0.98 is to give it a buffer, hopefully keeping the actual physics fps
-    // closer to the target
+    // The 0.98 is to give it a buffer, hopefully keeping the actual physics
+    // fps closer to the target
     if (timeSincePhysicsFrame >= (1.0 / PHYSICS_FPS) * 0.98) {
       timeSincePhysicsFrame = 0.0;
 
       // Update the world
-      for (int y = 0; y < WORLD_HEIGHT; y++) {
-        for (int x = 0; x < WORLD_WIDTH; x++) {
-          Block block = world[y][x];
-
-          if (y > 0) {
-
-            // Falling
-            if (HasGravity(block.type)) {
-              if (IsPassible(world[y - 1][x].type)) {
-                Block below = world[y - 1][x];
-                world[y - 1][x] = block;
-                world[y][x] = below;
-                continue;
-              }
-            }
-
-            // Sliding diagonally
-            if (CanSlide(block.type)) {
-              bool isLeftPassible =
-                  x > 0 ? IsPassible(world[y - 1][x - 1].type) &&
-                              IsPassible(world[y][x - 1].type)
-                        : false;
-              bool isRightPassible =
-                  x < WORLD_WIDTH - 1 ? IsPassible(world[y - 1][x + 1].type) &&
-                                            IsPassible(world[y][x + 1].type)
-                                      : false;
-              if (isLeftPassible && isRightPassible) {
-                bool slideLeft = pcg32_bool();
-                if (slideLeft) {
-                  Block leftBlock = world[y - 1][x - 1];
-                  world[y - 1][x - 1] = block;
-                  world[y][x] = leftBlock;
-                } else {
-                  Block rightBlock = world[y - 1][x + 1];
-                  world[y - 1][x + 1] = block;
-                  world[y][x] = rightBlock;
-                }
-                continue;
-              } else if (isLeftPassible) {
-                Block leftBlock = world[y - 1][x - 1];
-                world[y - 1][x - 1] = block;
-                world[y][x] = leftBlock;
-                continue;
-              } else if (isRightPassible) {
-                Block rightBlock = world[y - 1][x + 1];
-                world[y - 1][x + 1] = block;
-                world[y][x] = rightBlock;
-                continue;
-              }
-            }
-          }
-        }
-      }
+      worldTick();
     }
 
     BeginDrawing();
@@ -174,8 +202,9 @@ int main() {
       DrawLine(x * PX_SCALE, 0, x * PX_SCALE, SCREEN_HEIGHT, GRID_LINE_COLOR);
     }
 
-    // TODO: Fix the weird mouse bug where moving the mouse past the left window
-    // border will blink a box near the right window border for a brief moment
+    // TODO: Fix the weird mouse bug where moving the mouse past the left
+    // window border will blink a box near the right window border for a brief
+    // moment
 
     // Render cursor outline on screen
     if (mouseX >= 0 && mouseY >= 0 && mouseX < SCREEN_WIDTH &&
