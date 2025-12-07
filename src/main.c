@@ -8,17 +8,33 @@
 #include "block.h"
 #include "rng.h"
 
+#define const_min(a, b) ((a) < (b) ? (a) : (b))
+#define const_max(a, b) ((a) > (b) ? (a) : (b))
+
 // Better than using define to make these actually constant
 enum {
   PHYSICS_FPS = 20,
   RENDER_FPS = 60,
 
-  WORLD_WIDTH = 20,
-  WORLD_HEIGHT = 20,
-  PX_SCALE = 30,
+  WORLD_WIDTH = 60,
+  WORLD_HEIGHT = 60,
+  PX_SCALE = 10,
 
-  SCREEN_WIDTH = WORLD_WIDTH * PX_SCALE,
-  SCREEN_HEIGHT = WORLD_HEIGHT * PX_SCALE
+  WORLD_DISPLAY_PADDING = 20,
+
+  INTERFACE_HEIGHT = 200,
+  INTERFACE_WIDTH = 600,
+
+  SCREEN_WIDTH = const_max(WORLD_WIDTH * PX_SCALE + WORLD_DISPLAY_PADDING * 2,
+                           INTERFACE_WIDTH),
+  SCREEN_HEIGHT =
+      WORLD_HEIGHT * PX_SCALE + WORLD_DISPLAY_PADDING * 2 + INTERFACE_HEIGHT,
+
+  WORLD_SCREEN_TOP_LEFT_X = (SCREEN_WIDTH - WORLD_WIDTH * PX_SCALE) / 2,
+  WORLD_SCREEN_TOP_LEFT_Y = WORLD_DISPLAY_PADDING,
+  WORLD_SCREEN_BOTTOM_RIGHT_X = (SCREEN_WIDTH + WORLD_WIDTH * PX_SCALE) / 2,
+  WORLD_SCREEN_BOTTOM_RIGHT_Y =
+      (WORLD_HEIGHT * PX_SCALE + WORLD_DISPLAY_PADDING)
 };
 
 #define GRID_LINE_COLOR ((Color){50, 50, 50, 255})
@@ -39,35 +55,25 @@ void worldTick() {
 
   bool processed[WORLD_HEIGHT][WORLD_WIDTH] = {false};
 
-  // First gravity tick
-  for (unsigned int y = 0; y < WORLD_HEIGHT; y++) {
-    for (unsigned int x = 0; x < WORLD_WIDTH; x++) {
-      Block block = world[y][x];
-      if (y > 0) {
-
-        // Falling
-        if (HasGravity(block.type)) {
-          if (IsPassible(world[y - 1][x].type)) {
-            Block below = world[y - 1][x];
-            world[y - 1][x] = block;
-            world[y][x] = below;
-            processed[y - 1][x] = true;
-            processed[y][x] = true;
-            continue;
-          }
-        }
-      }
-    }
-  }
-
-  // Sliding diagonally
-  for (unsigned int y = 0; y < WORLD_HEIGHT; y++) {
+  for (int y = 0; y < WORLD_HEIGHT; y++) {
     for (unsigned int x = 0; x < WORLD_WIDTH; x++) {
       if (processed[y][x]) {
         continue;
       }
       Block block = world[y][x];
-      if (y > 0) {
+      if (y > 0 && HasGravity(block.type)) {
+
+        // Try falling straight down first
+        if (IsPassible(world[y - 1][x].type)) {
+          Block below = world[y - 1][x];
+          world[y - 1][x] = block;
+          world[y][x] = below;
+          processed[y - 1][x] = true;
+          processed[y][x] = true;
+          continue;
+        }
+
+        // If can't fall straight, try sliding diagonally
         if (CanSlide(block.type)) {
           bool isLeftPassible = x > 0 ? IsPassible(world[y - 1][x - 1].type) &&
                                             IsPassible(world[y][x - 1].type)
@@ -89,26 +95,38 @@ void worldTick() {
             }
             processed[y - 1][x + (slideLeft ? -1 : 1)] = true;
             processed[y][x] = true;
-            continue;
           } else if (isLeftPassible) {
             Block leftBlock = world[y - 1][x - 1];
             world[y - 1][x - 1] = block;
             world[y][x] = leftBlock;
             processed[y - 1][x - 1] = true;
             processed[y][x] = true;
-            continue;
           } else if (isRightPassible) {
             Block rightBlock = world[y - 1][x + 1];
             world[y - 1][x + 1] = block;
             world[y][x] = rightBlock;
             processed[y - 1][x + 1] = true;
             processed[y][x] = true;
-            continue;
           }
         }
       }
     }
   }
+}
+
+void drawInterface() {
+  int startX = WORLD_SCREEN_TOP_LEFT_X;
+  int startY = WORLD_SCREEN_BOTTOM_RIGHT_Y + WORLD_DISPLAY_PADDING;
+
+  const float BLOCK_SELECTION_SIZE = 50;
+
+  DrawTriangle((Vector2){startX, startY + BLOCK_SELECTION_SIZE / 2},
+               (Vector2){startX + BLOCK_SELECTION_SIZE / 2, startY},
+               (Vector2){startX + BLOCK_SELECTION_SIZE / 2,
+                         startY + BLOCK_SELECTION_SIZE},
+               RAYWHITE);
+  DrawRectangleLines(startX, startY, BLOCK_SELECTION_SIZE, BLOCK_SELECTION_SIZE,
+                     RAYWHITE);
 }
 
 int main() {
@@ -145,13 +163,16 @@ int main() {
     BeginDrawing();
     ClearBackground(BLACK);
 
-    if (mouseX >= 0 && mouseY >= 0 && mouseX < SCREEN_WIDTH &&
-        mouseY < SCREEN_HEIGHT) {
+    if (mouseX >= WORLD_SCREEN_TOP_LEFT_X &&
+        mouseY >= WORLD_SCREEN_TOP_LEFT_Y &&
+        mouseX < WORLD_SCREEN_BOTTOM_RIGHT_X &&
+        mouseY < WORLD_SCREEN_BOTTOM_RIGHT_Y) {
       if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-        int gridX = mouseX / PX_SCALE;
+        int gridX = (mouseX - WORLD_SCREEN_TOP_LEFT_X) / PX_SCALE;
         // Correct grid position because the the y coordinates of blocks are
         // flipped before rendering
-        int gridY = WORLD_HEIGHT - mouseY / PX_SCALE - 1;
+        int gridY =
+            WORLD_HEIGHT - (mouseY - WORLD_SCREEN_TOP_LEFT_Y) / PX_SCALE - 1;
         if (gridX >= 0 && gridX < WORLD_WIDTH && gridY >= 0 &&
             gridY < WORLD_HEIGHT) {
 
@@ -173,10 +194,10 @@ int main() {
     }
 
     for (int y = 0; y < WORLD_HEIGHT; y++) {
-      int screenY = (WORLD_HEIGHT - y - 1) * PX_SCALE;
+      int screenY = (WORLD_HEIGHT - y - 1) * PX_SCALE + WORLD_SCREEN_TOP_LEFT_Y;
       for (int x = 0; x < WORLD_WIDTH; x++) {
 
-        int screenX = x * PX_SCALE;
+        int screenX = x * PX_SCALE + WORLD_SCREEN_TOP_LEFT_X;
 
         Block block = world[y][x];
         switch (block.type) {
@@ -194,12 +215,16 @@ int main() {
       }
     }
 
-    for (int y = 0; y < WORLD_HEIGHT; y++) {
-      DrawLine(0, y * PX_SCALE, SCREEN_WIDTH, y * PX_SCALE, GRID_LINE_COLOR);
+    for (int y = 0; y < WORLD_HEIGHT + 1; y++) {
+      DrawLine(WORLD_SCREEN_TOP_LEFT_X, y * PX_SCALE + WORLD_SCREEN_TOP_LEFT_Y,
+               WORLD_SCREEN_BOTTOM_RIGHT_X,
+               y * PX_SCALE + WORLD_SCREEN_TOP_LEFT_Y, GRID_LINE_COLOR);
     }
 
-    for (int x = 0; x < WORLD_HEIGHT; x++) {
-      DrawLine(x * PX_SCALE, 0, x * PX_SCALE, SCREEN_HEIGHT, GRID_LINE_COLOR);
+    for (int x = 0; x < WORLD_WIDTH + 1; x++) {
+      DrawLine(x * PX_SCALE + WORLD_SCREEN_TOP_LEFT_X, WORLD_SCREEN_TOP_LEFT_Y,
+               x * PX_SCALE + WORLD_SCREEN_TOP_LEFT_X,
+               WORLD_SCREEN_BOTTOM_RIGHT_Y, GRID_LINE_COLOR);
     }
 
     // TODO: Fix the weird mouse bug where moving the mouse past the left
@@ -207,13 +232,18 @@ int main() {
     // moment
 
     // Render cursor outline on screen
-    if (mouseX >= 0 && mouseY >= 0 && mouseX < SCREEN_WIDTH &&
-        mouseY < SCREEN_HEIGHT) {
+    if (mouseX >= WORLD_SCREEN_TOP_LEFT_X &&
+        mouseY >= WORLD_SCREEN_TOP_LEFT_Y &&
+        mouseX < WORLD_SCREEN_BOTTOM_RIGHT_X &&
+        mouseY < WORLD_SCREEN_BOTTOM_RIGHT_Y) {
       int screenX = ((int)mouseX / PX_SCALE) * PX_SCALE;
       int screenY = ((int)mouseY / PX_SCALE) * PX_SCALE;
 
       DrawRectangleLines(screenX, screenY, PX_SCALE, PX_SCALE, RAYWHITE);
     }
+
+    // Draw the interface at the bottom of the screen
+    drawInterface();
 
     EndDrawing();
   }
