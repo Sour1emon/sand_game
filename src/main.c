@@ -11,6 +11,8 @@
 #define const_min(a, b) ((a) < (b) ? (a) : (b))
 #define const_max(a, b) ((a) > (b) ? (a) : (b))
 
+#define TWO_THIRDS (2.0f / 3.0f)
+
 // Better than using define to make these actually constant
 enum {
   PHYSICS_FPS = 20,
@@ -50,6 +52,10 @@ void initWorldState(Block world[WORLD_HEIGHT][WORLD_WIDTH]) {
 }
 
 Block world[WORLD_HEIGHT][WORLD_WIDTH];
+
+Font font;
+
+enum BlockType selectedBlockType = SAND;
 
 void worldTick() {
 
@@ -114,29 +120,100 @@ void worldTick() {
   }
 }
 
+// TODO: Clean up this function because currently it is a mess
 void drawInterface() {
   int startX = WORLD_SCREEN_TOP_LEFT_X;
   int startY = WORLD_SCREEN_BOTTOM_RIGHT_Y + WORLD_DISPLAY_PADDING;
 
-  const float BLOCK_SELECTION_SIZE = 50;
+  // Block picker
+  {
+    const float BLOCK_SELECTION_SIZE = 50;
+    const float BLOCK_SELECTION_PADDING = 10;
+    const float MIDDLE_BLOCK_SCALE = 1.4;
+    const float SCALE_ADDED = (MIDDLE_BLOCK_SCALE - 1.0);
 
-  DrawTriangle((Vector2){startX, startY + BLOCK_SELECTION_SIZE / 2},
-               (Vector2){startX + BLOCK_SELECTION_SIZE / 2, startY},
-               (Vector2){startX + BLOCK_SELECTION_SIZE / 2,
-                         startY + BLOCK_SELECTION_SIZE},
-               RAYWHITE);
-  DrawRectangleLines(startX, startY, BLOCK_SELECTION_SIZE, BLOCK_SELECTION_SIZE,
-                     RAYWHITE);
+    const float FONT_SIZE = 20.0f;
+    const float HEIGHT_OFFSET = MeasureTextEx(font, "ABC123", FONT_SIZE, 2).y;
+
+    int yOffset = SCALE_ADDED * BLOCK_SELECTION_SIZE / 2 + HEIGHT_OFFSET;
+    DrawTriangle(
+        (Vector2){startX + BLOCK_SELECTION_SIZE * TWO_THIRDS, startY + yOffset},
+        (Vector2){startX, startY + BLOCK_SELECTION_SIZE / 2 + yOffset},
+        (Vector2){startX + BLOCK_SELECTION_SIZE * TWO_THIRDS,
+                  startY + BLOCK_SELECTION_SIZE + yOffset},
+        RAYWHITE);
+
+    Vector2 charSize = MeasureTextEx(font, "A", FONT_SIZE, 0);
+
+    DrawText("A", startX + BLOCK_SELECTION_SIZE / 2 - charSize.x / 2.0 - 2.0,
+             startY + BLOCK_SELECTION_SIZE / 2 + yOffset - charSize.y / 2, 20,
+             RED);
+
+    int posX;
+
+    // The 6th time around is to ensure that posX is in the correct place for
+    // the other triangle to go
+    for (int i = 0; i < 6; i++) {
+      posX = startX + BLOCK_SELECTION_SIZE * TWO_THIRDS +
+             i * BLOCK_SELECTION_SIZE + (i + 1) * BLOCK_SELECTION_PADDING +
+             (i > 2 ? (BLOCK_SELECTION_SIZE + BLOCK_SELECTION_PADDING) *
+                          SCALE_ADDED * 2
+                    : 0);
+      if (i == 5) {
+        break;
+      }
+      int posY = startY + HEIGHT_OFFSET;
+      int size = BLOCK_SELECTION_SIZE;
+      if (i == 2) {
+        size *= MIDDLE_BLOCK_SCALE;
+        posX += BLOCK_SELECTION_PADDING * SCALE_ADDED +
+                BLOCK_SELECTION_SIZE * SCALE_ADDED / 2;
+
+      } else {
+        posY += BLOCK_SELECTION_SIZE * SCALE_ADDED / 2;
+      }
+      DrawRectangleLines(posX, posY, size, size, RAYWHITE);
+      const float INNER_BLOCK_SCALE = 0.8;
+      const float innerBlockSize = size * INNER_BLOCK_SCALE;
+      const float offset = ((1.0 - INNER_BLOCK_SCALE) * size) / 2;
+
+      // Wrap around block type
+      int blockTypeIndex = ((int)selectedBlockType) + (i - 2);
+      blockTypeIndex =
+          (blockTypeIndex % BLOCK_TYPES_COUNT + BLOCK_TYPES_COUNT) %
+          BLOCK_TYPES_COUNT;
+      DrawRectangle(posX + offset, posY + offset, innerBlockSize,
+                    innerBlockSize,
+                    BLOCKS[((enum BlockType)blockTypeIndex)].color);
+    }
+
+    DrawTriangle((Vector2){posX, startY + yOffset},
+                 (Vector2){posX, startY + BLOCK_SELECTION_SIZE + yOffset},
+                 (Vector2){posX + BLOCK_SELECTION_SIZE * TWO_THIRDS,
+                           startY + BLOCK_SELECTION_SIZE / 2 + yOffset},
+                 RAYWHITE);
+
+    charSize = MeasureTextEx(font, "D", FONT_SIZE, 0);
+
+    // Most of these values are here to make it look nice (they were randomly
+    // selected after trial and error)
+    DrawText("D", posX + BLOCK_SELECTION_SIZE / 4 - charSize.x / 2.0,
+             startY + BLOCK_SELECTION_SIZE / 2 + yOffset - charSize.y / 2, 20,
+             RED);
+  }
 }
 
 int main() {
-  enum BlockType selectedBlockType = SAND;
 
   pcg32_init((uint64_t)time(NULL));
   // Initialize world
   initWorldState(world);
 
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Sand Game");
+
+  font = LoadFontEx("resources/pixantiqua.ttf", 32, 0, 250);
+
+  SetTextLineSpacing(16);
 
   SetTargetFPS(RENDER_FPS);
 
@@ -187,6 +264,12 @@ int main() {
     }
 
     if (IsKeyPressed(KEY_A)) {
+      if (selectedBlockType == 0) {
+        selectedBlockType = BLOCK_TYPES_COUNT - 1;
+      } else {
+        selectedBlockType -= 1;
+      }
+    } else if (IsKeyPressed(KEY_D)) {
       selectedBlockType += 1;
       if (selectedBlockType == BLOCK_TYPES_COUNT) {
         selectedBlockType = 0;

@@ -34,3 +34,6 @@ clean:
 run: $(EXEC)
 	./$(EXEC)
 
+check_macros:
+	$(CC) -E src/block.h > preprocessed.c
+

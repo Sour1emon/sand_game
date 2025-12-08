@@ -31,31 +31,25 @@ bool CanSlide(enum BlockType type) {
   }
 }
 
-// (-4% to +4%)
-const int LIGHTNESS_VARIATION = 4;
-
-// (-2% to +2%)
-const int SATURATION_VARIATION = 2;
-
 Color GenBlockColor(enum BlockType type) {
-  Color base = BLOCK_COLORS[type];
+  BlockDef b = BLOCKS[type];
+  Color base = b.color;
   float h, s, l;
 
   RGBtoHSL(base, &h, &s, &l);
 
-  if (LIGHTNESS_VARIATION != 0) {
+  if (b.lightness_var != 0) {
     // Add subtle lightness variation
     float lightness_var =
-        ((float)((int)(pcg32() % LIGHTNESS_VARIATION * 2 + 1) -
-                 LIGHTNESS_VARIATION)) /
+        ((float)((int)(pcg32() % b.lightness_var * 2 + 1) - b.lightness_var)) /
         100.0f;
     l = fclampf(l + lightness_var, 0.0f, 1.0f);
   }
 
-  if (SATURATION_VARIATION != 0) {
+  if (b.saturation_var != 0) {
     // Add subtle saturation variation
-    float sat_var = ((float)((int)(pcg32() % SATURATION_VARIATION * 2 + 1) -
-                             SATURATION_VARIATION)) /
+    float sat_var = ((float)((int)(pcg32() % b.saturation_var * 2 + 1) -
+                             b.saturation_var)) /
                     100.0f;
     s = fclampf(s + sat_var, 0.0f, 1.0f);
   }
