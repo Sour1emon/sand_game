@@ -30,9 +30,9 @@ typedef struct {
   Color color;
   uint64_t props;
   // Lightness variation in percent
-  uint32_t lightnessVar;
+  int lightnessVar;
   // Saturation variation in percent
-  uint32_t saturationVar;
+  int saturationVar;
 
 } BlockDef;
 

@@ -3,6 +3,7 @@
 
 #include "rng.h"
 #include "utils.h"
+#include <stdio.h>
 
 bool HasGravity(enum BlockType type) {
   switch (type) {

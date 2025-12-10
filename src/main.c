@@ -169,7 +169,7 @@ void drawInterface() {
         size *= MIDDLE_BLOCK_SCALE;
         // Don't adjust posX here - let it be naturally positioned
         const char *displayName = BLOCKS[selectedBlockType].displayName;
-        Vector2 textSize = MeasureTextEx(font, displayName, 20, 2);
+        Vector2 textSize = MeasureTextEx(font, displayName, FONT_SIZE, 2);
         DrawTextEx(font, displayName,
                    (Vector2){posX + (size - textSize.x) / 2, startY}, FONT_SIZE,
                    2, RAYWHITE);
