@@ -26,31 +26,35 @@ Color GenBlockColor(enum BlockType type);
 
 typedef struct {
   enum BlockType type;
+  const char *displayName;
   Color color;
   uint64_t props;
   // Lightness variation in percent
-  uint32_t lightness_var;
+  uint32_t lightnessVar;
   // Saturation variation in percent
-  uint32_t saturation_var;
+  uint32_t saturationVar;
 
 } BlockDef;
 
 static const BlockDef BLOCKS[BLOCK_TYPES_COUNT] = {
     [AIR] = (BlockDef){.type = AIR,
+                       .displayName = "Air",
                        .color = RGBA(0, 0, 0, 0),
                        .props = IS_PASSIBLE,
-                       .lightness_var = 0,
-                       .saturation_var = 0},
+                       .lightnessVar = 0,
+                       .saturationVar = 0},
     [SAND] = (BlockDef){.type = SAND,
+                        .displayName = "Sand",
                         .color = RGBA(194, 178, 128, 255),
                         .props = HAS_GRAVITY | CAN_SLIDE,
-                        .lightness_var = 4,
-                        .saturation_var = 2},
+                        .lightnessVar = 4,
+                        .saturationVar = 2},
     [ROCK] = (BlockDef){.type = ROCK,
+                        .displayName = "Rock",
                         .color = RGBA(64, 64, 64, 255),
                         .props = NO_PROPS,
-                        .lightness_var = 4,
-                        .saturation_var = 2}};
+                        .lightnessVar = 4,
+                        .saturationVar = 2}};
 
 typedef struct {
   enum BlockType type;

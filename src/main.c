@@ -127,12 +127,13 @@ void drawInterface() {
 
   // Block picker
   {
-    const float BLOCK_SELECTION_SIZE = 50;
-    const float BLOCK_SELECTION_PADDING = 10;
+    const float BLOCK_SELECTION_SIZE = 35;
+    const float BLOCK_SELECTION_PADDING = BLOCK_SELECTION_SIZE * 0.2;
     const float MIDDLE_BLOCK_SCALE = 1.4;
     const float SCALE_ADDED = (MIDDLE_BLOCK_SCALE - 1.0);
 
-    const float FONT_SIZE = 20.0f;
+    const float FONT_SIZE = 20.0f * (BLOCK_SELECTION_SIZE / 50.0);
+
     const float HEIGHT_OFFSET = MeasureTextEx(font, "ABC123", FONT_SIZE, 2).y;
 
     int yOffset = SCALE_ADDED * BLOCK_SELECTION_SIZE / 2 + HEIGHT_OFFSET;
@@ -143,63 +144,54 @@ void drawInterface() {
                   startY + BLOCK_SELECTION_SIZE + yOffset},
         RAYWHITE);
 
-    Vector2 charSize = MeasureTextEx(font, "A", FONT_SIZE, 0);
-
-    DrawText("A", startX + BLOCK_SELECTION_SIZE / 2 - charSize.x / 2.0 - 2.0,
-             startY + BLOCK_SELECTION_SIZE / 2 + yOffset - charSize.y / 2, 20,
-             RED);
-
     int posX;
 
     // The 6th time around is to ensure that posX is in the correct place for
     // the other triangle to go
     for (int i = 0; i < 6; i++) {
       posX = startX + BLOCK_SELECTION_SIZE * TWO_THIRDS +
-             i * BLOCK_SELECTION_SIZE + (i + 1) * BLOCK_SELECTION_PADDING +
-             (i > 2 ? (BLOCK_SELECTION_SIZE + BLOCK_SELECTION_PADDING) *
-                          SCALE_ADDED * 2
-                    : 0);
+             i * BLOCK_SELECTION_SIZE + (i + 1) * BLOCK_SELECTION_PADDING;
+
+      // For boxes after the middle one, add extra space for the enlarged middle
+      // block
+      if (i > 2) {
+        posX += BLOCK_SELECTION_SIZE * SCALE_ADDED +
+                BLOCK_SELECTION_PADDING * SCALE_ADDED;
+      }
+
       if (i == 5) {
         break;
       }
       int posY = startY + HEIGHT_OFFSET;
       int size = BLOCK_SELECTION_SIZE;
+
       if (i == 2) {
         size *= MIDDLE_BLOCK_SCALE;
-        posX += BLOCK_SELECTION_PADDING * SCALE_ADDED +
-                BLOCK_SELECTION_SIZE * SCALE_ADDED / 2;
-
+        // Don't adjust posX here - let it be naturally positioned
+        const char *displayName = BLOCKS[selectedBlockType].displayName;
+        Vector2 textSize = MeasureTextEx(font, displayName, 20, 2);
+        DrawTextEx(font, displayName,
+                   (Vector2){posX + (size - textSize.x) / 2, startY}, FONT_SIZE,
+                   2, RAYWHITE);
       } else {
         posY += BLOCK_SELECTION_SIZE * SCALE_ADDED / 2;
       }
-      DrawRectangleLines(posX, posY, size, size, RAYWHITE);
-      const float INNER_BLOCK_SCALE = 0.8;
-      const float innerBlockSize = size * INNER_BLOCK_SCALE;
-      const float offset = ((1.0 - INNER_BLOCK_SCALE) * size) / 2;
 
-      // Wrap around block type
       int blockTypeIndex = ((int)selectedBlockType) + (i - 2);
       blockTypeIndex =
           (blockTypeIndex % BLOCK_TYPES_COUNT + BLOCK_TYPES_COUNT) %
           BLOCK_TYPES_COUNT;
-      DrawRectangle(posX + offset, posY + offset, innerBlockSize,
-                    innerBlockSize,
-                    BLOCKS[((enum BlockType)blockTypeIndex)].color);
-    }
 
+      DrawRectangle(posX, posY, size, size,
+                    BLOCKS[((enum BlockType)blockTypeIndex)].color);
+
+      DrawRectangleLinesEx((Rectangle){posX, posY, size, size}, 1, RAYWHITE);
+    }
     DrawTriangle((Vector2){posX, startY + yOffset},
                  (Vector2){posX, startY + BLOCK_SELECTION_SIZE + yOffset},
                  (Vector2){posX + BLOCK_SELECTION_SIZE * TWO_THIRDS,
                            startY + BLOCK_SELECTION_SIZE / 2 + yOffset},
                  RAYWHITE);
-
-    charSize = MeasureTextEx(font, "D", FONT_SIZE, 0);
-
-    // Most of these values are here to make it look nice (they were randomly
-    // selected after trial and error)
-    DrawText("D", posX + BLOCK_SELECTION_SIZE / 4 - charSize.x / 2.0,
-             startY + BLOCK_SELECTION_SIZE / 2 + yOffset - charSize.y / 2, 20,
-             RED);
   }
 }
 

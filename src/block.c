@@ -38,19 +38,19 @@ Color GenBlockColor(enum BlockType type) {
 
   RGBtoHSL(base, &h, &s, &l);
 
-  if (b.lightness_var != 0) {
+  if (b.lightnessVar != 0) {
     // Add subtle lightness variation
     float lightness_var =
-        ((float)((int)(pcg32() % b.lightness_var * 2 + 1) - b.lightness_var)) /
+        ((float)((int)(pcg32() % b.lightnessVar * 2 + 1) - b.lightnessVar)) /
         100.0f;
     l = fclampf(l + lightness_var, 0.0f, 1.0f);
   }
 
-  if (b.saturation_var != 0) {
+  if (b.saturationVar != 0) {
     // Add subtle saturation variation
-    float sat_var = ((float)((int)(pcg32() % b.saturation_var * 2 + 1) -
-                             b.saturation_var)) /
-                    100.0f;
+    float sat_var =
+        ((float)((int)(pcg32() % b.saturationVar * 2 + 1) - b.saturationVar)) /
+        100.0f;
     s = fclampf(s + sat_var, 0.0f, 1.0f);
   }
 
