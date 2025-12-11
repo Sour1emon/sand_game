@@ -192,6 +192,15 @@ void drawInterface() {
                  (Vector2){posX + BLOCK_SELECTION_SIZE * TWO_THIRDS,
                            startY + BLOCK_SELECTION_SIZE / 2 + yOffset},
                  RAYWHITE);
+    int endX = posX + BLOCK_SELECTION_SIZE * TWO_THIRDS;
+    int selectorWidth = endX - startX;
+    const char *message = "Press A/D to switch blocks";
+    Vector2 size = MeasureTextEx(font, message, FONT_SIZE, 2);
+    DrawTextEx(font, message,
+               (Vector2){startX + (selectorWidth - size.x) / 2,
+                         startY + BLOCK_SELECTION_SIZE * MIDDLE_BLOCK_SCALE +
+                             BLOCK_SELECTION_PADDING + 10.0},
+               FONT_SIZE, 2, YELLOW);
   }
 }
 
