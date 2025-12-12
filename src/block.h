@@ -1,3 +1,5 @@
+#pragma once
+
 #include "raylib.h"
 #include <stdbool.h>
 #include <stdint.h>

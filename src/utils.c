@@ -1,5 +1,10 @@
 #include "utils.h"
+#include "block.h"
 #include <math.h>
+
+int wrapBlockTypeIndex(int index) {
+  return (index % BLOCK_TYPES_COUNT + BLOCK_TYPES_COUNT) % BLOCK_TYPES_COUNT;
+}
 
 float fclampf(float value, float min, float max) {
   if (value < min)

@@ -1,4 +1,8 @@
+#pragma once
+
 #include "raylib.h"
+
+int wrapBlockTypeIndex(int index);
 
 float fclampf(float value, float min, float max);
 
