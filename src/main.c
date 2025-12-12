@@ -120,88 +120,108 @@ void worldTick() {
   }
 }
 
-// TODO: Clean up this function because currently it is a mess
+const float MIDDLE_BLOCK_SCALE = 1.4;
+
+static inline int wrapBlockTypeIndex(int index) {
+  return (index % BLOCK_TYPES_COUNT + BLOCK_TYPES_COUNT) % BLOCK_TYPES_COUNT;
+}
+
+static inline int calculateBlockPosX(int i, int startX, float blockSize,
+                                     float padding, float scaleAdded) {
+  int posX =
+      startX + blockSize * TWO_THIRDS + i * blockSize + (i + 1) * padding;
+
+  // For boxes after the middle one, add extra space for the enlarged middle
+  // block.
+  if (i > 2) {
+    posX += blockSize * scaleAdded + padding * scaleAdded;
+  }
+  return posX;
+}
+
+void drawBlockSelectionTriangles(int startX, int startY, int yOffset, int endX,
+                                 float blockSize) {
+  // Left triangle
+  DrawTriangle(
+      (Vector2){startX + blockSize * TWO_THIRDS, startY + yOffset},
+      (Vector2){startX, startY + blockSize / 2 + yOffset},
+      (Vector2){startX + blockSize * TWO_THIRDS, startY + blockSize + yOffset},
+      RAYWHITE);
+
+  // Right triangle
+  DrawTriangle((Vector2){endX, startY + yOffset},
+               (Vector2){endX, startY + blockSize + yOffset},
+               (Vector2){endX + blockSize * TWO_THIRDS,
+                         startY + blockSize / 2 + yOffset},
+               RAYWHITE);
+}
+
+void drawBlockAtIndex(int i, int posX, int startY, float blockSize,
+                      float scaleAdded, float fontSize) {
+  int posY = startY;
+  int size = blockSize;
+
+  // This means that the block being drawn is the middle block, which needs to
+  // be bigger than all of the other ones
+  if (i == 2) {
+    size *= MIDDLE_BLOCK_SCALE;
+    const char *displayName = BLOCKS[selectedBlockType].displayName;
+    Vector2 textSize = MeasureTextEx(font, displayName, fontSize, 2);
+    DrawTextEx(font, displayName,
+               (Vector2){posX + (size - textSize.x) / 2, startY - textSize.y},
+               fontSize, 2, RAYWHITE);
+  } else {
+    posY += blockSize * scaleAdded / 2;
+  }
+
+  int blockTypeIndex = wrapBlockTypeIndex(selectedBlockType + (i - 2));
+  DrawRectangle(posX, posY, size, size, BLOCKS[blockTypeIndex].color);
+  DrawRectangleLinesEx((Rectangle){posX, posY, size, size}, 1, RAYWHITE);
+}
+
+void drawBlockPicker(int startX, int startY) {
+  const float BLOCK_SIZE = 35;
+  const float PADDING = BLOCK_SIZE * 0.2;
+  const float SCALE_ADDED = MIDDLE_BLOCK_SCALE - 1.0;
+  const float FONT_SIZE = 20.0f * (BLOCK_SIZE / 50.0);
+  const float SPACING_FROM_SELECTOR = 10.0f;
+
+  // Calculate layout.
+  // The text used for MeasureTextEx does not really matter as long as its upper
+  // case. This ensures the position of everything else is offset based on the
+  // block name text that is displayed
+  const float HEIGHT_OFFSET = MeasureTextEx(font, "ABC123", FONT_SIZE, 2).y;
+  int yOffset = SCALE_ADDED * BLOCK_SIZE / 2 + HEIGHT_OFFSET;
+
+  // Draw blocks
+  int endX = startX;
+  for (int i = 0; i < 5; i++) {
+    endX = calculateBlockPosX(i, startX, BLOCK_SIZE, PADDING, SCALE_ADDED);
+    drawBlockAtIndex(i, endX, startY + HEIGHT_OFFSET, BLOCK_SIZE, SCALE_ADDED,
+                     FONT_SIZE);
+  }
+
+  // Calculate final position for right triangle
+  endX = calculateBlockPosX(5, startX, BLOCK_SIZE, PADDING, SCALE_ADDED);
+
+  // Draw navigation triangles
+  drawBlockSelectionTriangles(startX, startY, yOffset, endX, BLOCK_SIZE);
+
+  // Draw instruction text
+  int selectorWidth = endX + BLOCK_SIZE * TWO_THIRDS - startX;
+  const char *message = "Press A/D to switch blocks";
+  Vector2 size = MeasureTextEx(font, message, FONT_SIZE, 2);
+  DrawTextEx(font, message,
+             (Vector2){startX + (selectorWidth - size.x) / 2,
+                       startY + BLOCK_SIZE * MIDDLE_BLOCK_SCALE + PADDING +
+                           SPACING_FROM_SELECTOR},
+             FONT_SIZE, 2, YELLOW);
+}
+
 void drawInterface() {
   int startX = WORLD_SCREEN_TOP_LEFT_X;
   int startY = WORLD_SCREEN_BOTTOM_RIGHT_Y + WORLD_DISPLAY_PADDING;
-
-  // Block picker
-  {
-    const float BLOCK_SELECTION_SIZE = 35;
-    const float BLOCK_SELECTION_PADDING = BLOCK_SELECTION_SIZE * 0.2;
-    const float MIDDLE_BLOCK_SCALE = 1.4;
-    const float SCALE_ADDED = (MIDDLE_BLOCK_SCALE - 1.0);
-
-    const float FONT_SIZE = 20.0f * (BLOCK_SELECTION_SIZE / 50.0);
-
-    const float HEIGHT_OFFSET = MeasureTextEx(font, "ABC123", FONT_SIZE, 2).y;
-
-    int yOffset = SCALE_ADDED * BLOCK_SELECTION_SIZE / 2 + HEIGHT_OFFSET;
-    DrawTriangle(
-        (Vector2){startX + BLOCK_SELECTION_SIZE * TWO_THIRDS, startY + yOffset},
-        (Vector2){startX, startY + BLOCK_SELECTION_SIZE / 2 + yOffset},
-        (Vector2){startX + BLOCK_SELECTION_SIZE * TWO_THIRDS,
-                  startY + BLOCK_SELECTION_SIZE + yOffset},
-        RAYWHITE);
-
-    int posX;
-
-    // The 6th time around is to ensure that posX is in the correct place for
-    // the other triangle to go
-    for (int i = 0; i < 6; i++) {
-      posX = startX + BLOCK_SELECTION_SIZE * TWO_THIRDS +
-             i * BLOCK_SELECTION_SIZE + (i + 1) * BLOCK_SELECTION_PADDING;
-
-      // For boxes after the middle one, add extra space for the enlarged middle
-      // block
-      if (i > 2) {
-        posX += BLOCK_SELECTION_SIZE * SCALE_ADDED +
-                BLOCK_SELECTION_PADDING * SCALE_ADDED;
-      }
-
-      if (i == 5) {
-        break;
-      }
-      int posY = startY + HEIGHT_OFFSET;
-      int size = BLOCK_SELECTION_SIZE;
-
-      if (i == 2) {
-        size *= MIDDLE_BLOCK_SCALE;
-        // Don't adjust posX here - let it be naturally positioned
-        const char *displayName = BLOCKS[selectedBlockType].displayName;
-        Vector2 textSize = MeasureTextEx(font, displayName, FONT_SIZE, 2);
-        DrawTextEx(font, displayName,
-                   (Vector2){posX + (size - textSize.x) / 2, startY}, FONT_SIZE,
-                   2, RAYWHITE);
-      } else {
-        posY += BLOCK_SELECTION_SIZE * SCALE_ADDED / 2;
-      }
-
-      int blockTypeIndex = ((int)selectedBlockType) + (i - 2);
-      blockTypeIndex =
-          (blockTypeIndex % BLOCK_TYPES_COUNT + BLOCK_TYPES_COUNT) %
-          BLOCK_TYPES_COUNT;
-
-      DrawRectangle(posX, posY, size, size,
-                    BLOCKS[((enum BlockType)blockTypeIndex)].color);
-
-      DrawRectangleLinesEx((Rectangle){posX, posY, size, size}, 1, RAYWHITE);
-    }
-    DrawTriangle((Vector2){posX, startY + yOffset},
-                 (Vector2){posX, startY + BLOCK_SELECTION_SIZE + yOffset},
-                 (Vector2){posX + BLOCK_SELECTION_SIZE * TWO_THIRDS,
-                           startY + BLOCK_SELECTION_SIZE / 2 + yOffset},
-                 RAYWHITE);
-    int endX = posX + BLOCK_SELECTION_SIZE * TWO_THIRDS;
-    int selectorWidth = endX - startX;
-    const char *message = "Press A/D to switch blocks";
-    Vector2 size = MeasureTextEx(font, message, FONT_SIZE, 2);
-    DrawTextEx(font, message,
-               (Vector2){startX + (selectorWidth - size.x) / 2,
-                         startY + BLOCK_SELECTION_SIZE * MIDDLE_BLOCK_SCALE +
-                             BLOCK_SELECTION_PADDING + 10.0},
-               FONT_SIZE, 2, YELLOW);
-  }
+  drawBlockPicker(startX, startY);
 }
 
 int main() {
@@ -265,16 +285,9 @@ int main() {
     }
 
     if (IsKeyPressed(KEY_A)) {
-      if (selectedBlockType == 0) {
-        selectedBlockType = BLOCK_TYPES_COUNT - 1;
-      } else {
-        selectedBlockType -= 1;
-      }
+      selectedBlockType = wrapBlockTypeIndex(selectedBlockType - 1);
     } else if (IsKeyPressed(KEY_D)) {
-      selectedBlockType += 1;
-      if (selectedBlockType == BLOCK_TYPES_COUNT) {
-        selectedBlockType = 0;
-      }
+      selectedBlockType = wrapBlockTypeIndex(selectedBlockType + 1);
     }
 
     for (int y = 0; y < WORLD_HEIGHT; y++) {
