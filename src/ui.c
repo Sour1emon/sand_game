@@ -1,8 +1,9 @@
 #include "ui.h"
 #include "block.h"
 #include "consts.h"
+#include "state.h"
 #include "utils.h"
-#include "world.h"
+#include <stdio.h>
 #include <stdlib.h>
 
 // Return false if the font fails to load.
@@ -44,8 +45,9 @@ static void drawBlockSelectionTriangles(int startX, int startY, int yOffset,
                RAYWHITE);
 }
 
-static void drawBlockAtIndex(int i, int posX, int startY, float blockSize,
-                             float scaleAdded, float fontSize) {
+static void drawBlockAtIndex(game_state *state, int i, int posX, int startY,
+                             float blockSize, float scaleAdded,
+                             float fontSize) {
   int posY = startY;
   int size = blockSize;
 
@@ -53,7 +55,7 @@ static void drawBlockAtIndex(int i, int posX, int startY, float blockSize,
   // be bigger than all of the other ones
   if (i == 2) {
     size *= MIDDLE_BLOCK_SCALE;
-    const char *displayName = BLOCKS[selectedBlockType].displayName;
+    const char *displayName = BLOCKS[state->selectedBlockType].displayName;
     Vector2 textSize = MeasureTextEx(font, displayName, fontSize, 2);
     DrawTextEx(font, displayName,
                (Vector2){posX + (size - textSize.x) / 2, startY - textSize.y},
@@ -62,12 +64,12 @@ static void drawBlockAtIndex(int i, int posX, int startY, float blockSize,
     posY += blockSize * scaleAdded / 2;
   }
 
-  int blockTypeIndex = wrapBlockTypeIndex(selectedBlockType + (i - 2));
+  int blockTypeIndex = wrapBlockTypeIndex(state->selectedBlockType + (i - 2));
   DrawRectangle(posX, posY, size, size, BLOCKS[blockTypeIndex].color);
   DrawRectangleLinesEx((Rectangle){posX, posY, size, size}, 1, RAYWHITE);
 }
 
-static void drawBlockPicker(int startX, int startY) {
+static Vector2 drawBlockPicker(game_state *state, int startX, int startY) {
   const float BLOCK_SIZE = 35;
   const float PADDING = BLOCK_SIZE * 0.2;
   const float SCALE_ADDED = MIDDLE_BLOCK_SCALE - 1.0;
@@ -85,8 +87,8 @@ static void drawBlockPicker(int startX, int startY) {
   int endX = startX;
   for (int i = 0; i < 5; i++) {
     endX = calculateBlockPosX(i, startX, BLOCK_SIZE, PADDING, SCALE_ADDED);
-    drawBlockAtIndex(i, endX, startY + HEIGHT_OFFSET, BLOCK_SIZE, SCALE_ADDED,
-                     FONT_SIZE);
+    drawBlockAtIndex(state, i, endX, startY + HEIGHT_OFFSET, BLOCK_SIZE,
+                     SCALE_ADDED, FONT_SIZE);
   }
 
   // Calculate final position for right triangle
@@ -99,15 +101,22 @@ static void drawBlockPicker(int startX, int startY) {
   int selectorWidth = endX + BLOCK_SIZE * TWO_THIRDS - startX;
   const char *message = "Press A/D to switch blocks";
   Vector2 size = MeasureTextEx(font, message, FONT_SIZE, 2);
-  DrawTextEx(font, message,
-             (Vector2){startX + (selectorWidth - size.x) / 2,
-                       startY + BLOCK_SIZE * MIDDLE_BLOCK_SCALE + PADDING +
-                           SPACING_FROM_SELECTOR},
+  const float y = startY + BLOCK_SIZE * MIDDLE_BLOCK_SCALE + PADDING +
+                  SPACING_FROM_SELECTOR;
+  DrawTextEx(font, message, (Vector2){startX + (selectorWidth - size.x) / 2, y},
              FONT_SIZE, 2, YELLOW);
+  return (Vector2){endX + BLOCK_SIZE * TWO_THIRDS, y + size.y};
 }
 
-void drawInterface() {
+static void drawBlockPlaceWidth(game_state *state, int startX, int startY) {
+  char *str;
+  asprintf(&str, "Block Place Width: %d", state->placeWidth);
+  DrawTextEx(font, str, (Vector2){startX, startY}, 20.0f, 2.0f, RAYWHITE);
+}
+
+void drawInterface(game_state *state) {
   int startX = WORLD_SCREEN_TOP_LEFT_X;
   int startY = WORLD_SCREEN_BOTTOM_RIGHT_Y + WORLD_DISPLAY_PADDING;
-  drawBlockPicker(startX, startY);
+  Vector2 end = drawBlockPicker(state, startX, startY);
+  drawBlockPlaceWidth(state, startX, end.y + 10);
 }

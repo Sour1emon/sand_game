@@ -2,8 +2,6 @@
 
 #include "block.h"
 
-enum BlockType selectedBlockType;
-
 Block *getBlock(unsigned int x, unsigned int y);
 
 bool setBlock(unsigned int x, unsigned int y, Block block);

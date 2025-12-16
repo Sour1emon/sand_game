@@ -9,15 +9,40 @@
 #include "consts.h"
 #include "keymap.h"
 #include "rng.h"
+#include "state.h"
 #include "ui.h"
 #include "utils.h"
 #include "world.h"
 
+void ProcessKeys(game_state *state) {
+  // Keybinds for switching the selected block type
+  if (IsKeyPressed(SELECTED_BLOCK_LEFT)) {
+    state->selectedBlockType = wrapBlockTypeIndex(state->selectedBlockType - 1);
+  } else if (IsKeyPressed(SELECTED_BLOCK_RIGHT)) {
+    state->selectedBlockType = wrapBlockTypeIndex(state->selectedBlockType + 1);
+  }
+
+  if (IsKeyPressed(INCREASE_PLACE_WIDTH)) {
+    // Make sure placeWidth is always odd
+    state->placeWidth =
+        min(state->placeWidth + 2,
+            WORLD_WIDTH % 2 == 0 ? WORLD_WIDTH + 1 : WORLD_WIDTH);
+  } else if (IsKeyPressed(DECREASE_PLACE_WIDTH)) {
+    state->placeWidth = max(state->placeWidth - 2, 1);
+  }
+}
+
 int main() {
 
   pcg32_init((uint64_t)time(NULL));
+
+  // TODO: Add the world to the game state
+
   // Initialize world
   initWorldState();
+
+  // Init game state
+  initGameState();
 
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Sand Game");
 
@@ -31,6 +56,9 @@ int main() {
 
   // Main loop
   while (!WindowShouldClose()) {
+    game_state *state = getState();
+
+    ProcessKeys(state);
 
     float delta = GetFrameTime();
     timeSincePhysicsFrame += delta;
@@ -60,23 +88,27 @@ int main() {
         // flipped before rendering
         int gridY =
             WORLD_HEIGHT - (mouseY - WORLD_SCREEN_TOP_LEFT_Y) / PX_SCALE - 1;
-        // Make sure the color does not change randomly
-        // We do not need bounds checking because that is already handled in
-        // GetBlock
-        Block *targetBlock = getBlock(gridY, gridX);
-        if (targetBlock != NULL && targetBlock->type != selectedBlockType) {
-          setBlock(gridX, gridY,
-                   (Block){.type = selectedBlockType,
-                           .color = GenBlockColor(selectedBlockType)});
+        int half = state->placeWidth / 2;
+
+        for (int x = max(gridX + -half, 0);
+             x <= min(gridX + half, WORLD_WIDTH - 1); x++) {
+          for (int y = max(-half + gridY, 0);
+               y <= min(half + gridY, WORLD_HEIGHT - 1); y++) {
+
+            Block *targetBlock = getBlock(x, y);
+            // Make sure the color does not change randomly
+            // We do not need bounds checking because that is already handled in
+            // GetBlock
+            if (targetBlock != NULL &&
+                targetBlock->type != state->selectedBlockType) {
+              setBlock(
+                  x, y,
+                  (Block){.type = state->selectedBlockType,
+                          .color = GenBlockColor(state->selectedBlockType)});
+            }
+          }
         }
       }
-    }
-
-    // Keybinds for switching the selected block type
-    if (IsKeyPressed(SELECTED_BLOCK_LEFT)) {
-      selectedBlockType = wrapBlockTypeIndex(selectedBlockType - 1);
-    } else if (IsKeyPressed(SELECTED_BLOCK_RIGHT)) {
-      selectedBlockType = wrapBlockTypeIndex(selectedBlockType + 1);
     }
 
     // Draw the blocks on the screen
@@ -127,11 +159,14 @@ int main() {
       int screenX = ((int)mouseX / PX_SCALE) * PX_SCALE;
       int screenY = ((int)mouseY / PX_SCALE) * PX_SCALE;
 
-      DrawRectangleLines(screenX, screenY, PX_SCALE, PX_SCALE, RAYWHITE);
+      DrawRectangleLines(screenX - (state->placeWidth - 1) / 2 * PX_SCALE,
+                         screenY - (state->placeWidth - 1) / 2 * PX_SCALE,
+                         PX_SCALE * state->placeWidth,
+                         PX_SCALE * state->placeWidth, RAYWHITE);
     }
 
     // Draw the interface at the bottom of the screen
-    drawInterface();
+    drawInterface(state);
 
     EndDrawing();
   }

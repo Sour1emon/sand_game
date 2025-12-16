@@ -5,8 +5,6 @@
 
 Block world[WORLD_HEIGHT][WORLD_WIDTH];
 
-enum BlockType selectedBlockType = SAND;
-
 Block *getBlock(unsigned int x, unsigned int y) {
   if (x > WORLD_WIDTH || y > WORLD_HEIGHT) {
     return NULL;
