@@ -14,6 +14,8 @@
 #include "utils.h"
 #include "world.h"
 
+inline int EnsureOdd(int value) { return (value % 2 == 0) ? value + 1 : value; }
+
 void ProcessKeys(game_state *state) {
   // Keybinds for switching the selected block type
   if (IsKeyPressed(SELECTED_BLOCK_LEFT)) {
@@ -23,10 +25,10 @@ void ProcessKeys(game_state *state) {
   }
 
   if (IsKeyPressed(INCREASE_PLACE_WIDTH)) {
-    // Make sure placeWidth is always odd
+    // Make sure placeWidth is always odd. We want to limit the place width to
+    // the screen size
     state->placeWidth =
-        min(state->placeWidth + 2,
-            WORLD_WIDTH % 2 == 0 ? WORLD_WIDTH + 1 : WORLD_WIDTH);
+        min(state->placeWidth + 2, EnsureOdd(min(WORLD_WIDTH, WORLD_HEIGHT)));
   } else if (IsKeyPressed(DECREASE_PLACE_WIDTH)) {
     state->placeWidth = max(state->placeWidth - 2, 1);
   }
@@ -45,14 +47,14 @@ void drawWorld(game_state *state, int mouseX, int mouseY) {
       switch (block->type) {
       case AIR:
         break;
-      case SAND:
-      case ROCK:
-        DrawRectangle(screenX, screenY, PX_SCALE, PX_SCALE, block->color);
-        break;
       case BLOCK_TYPES_COUNT:
         // This branch should never be reached
         errx(EXIT_FAILURE, "Found block of type BLOCK_TYPES_COUNT which "
                            "should never happen");
+        break;
+      default:
+        DrawRectangle(screenX, screenY, PX_SCALE, PX_SCALE, block->color);
+        break;
       }
     }
   }
@@ -90,6 +92,8 @@ void drawWorld(game_state *state, int mouseX, int mouseY) {
 
 typedef enum { MAIN_MENU, GAME_SCREEN, SETTINGS_MENU } menu;
 
+void handleNonGameScreen(menu *currentMenu) {}
+
 int main() {
 
   pcg32_init((uint64_t)time(NULL));
@@ -111,6 +115,11 @@ int main() {
 
   // Main loop
   while (!WindowShouldClose()) {
+
+    if (currentMenu != GAME_SCREEN) {
+      handleNonGameScreen(&currentMenu);
+    }
+
     game_state *state = &_state;
 
     ProcessKeys(state);

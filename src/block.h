@@ -4,14 +4,15 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-enum BlockType { AIR, SAND, ROCK, BLOCK_TYPES_COUNT };
+enum BlockType { AIR, SAND, GRAVEL, ROCK, WATER, BLOCK_TYPES_COUNT };
 
 #define ARG_INDEX(x) ((uint64_t)(1 << x))
 
 typedef enum {
   HAS_GRAVITY = ARG_INDEX(0),
   IS_PASSIBLE = ARG_INDEX(1),
-  CAN_SLIDE = ARG_INDEX(2)
+  CAN_SLIDE = ARG_INDEX(2),
+  IS_FLUID = ARG_INDEX(3)
 } BLOCK_PROPERTY;
 
 #define NO_PROPS ((uint64_t)(0))
@@ -51,12 +52,24 @@ static const BlockDef BLOCKS[BLOCK_TYPES_COUNT] = {
                         .props = HAS_GRAVITY | CAN_SLIDE,
                         .lightnessVar = 4,
                         .saturationVar = 2},
+    [GRAVEL] = (BlockDef){.type = GRAVEL,
+                          .displayName = "Gravel",
+                          .color = RGBA(114, 114, 114, 255),
+                          .props = HAS_GRAVITY | CAN_SLIDE,
+                          .lightnessVar = 4,
+                          .saturationVar = 2},
     [ROCK] = (BlockDef){.type = ROCK,
                         .displayName = "Rock",
                         .color = RGBA(64, 64, 64, 255),
                         .props = NO_PROPS,
                         .lightnessVar = 4,
-                        .saturationVar = 2}};
+                        .saturationVar = 2},
+    [WATER] = (BlockDef){.type = WATER,
+                         .displayName = "Water",
+                         .color = RGBA(28, 163, 236, 255),
+                         .props = HAS_GRAVITY | CAN_SLIDE | IS_FLUID,
+                         .lightnessVar = 4,
+                         .saturationVar = 2}};
 
 typedef struct {
   enum BlockType type;

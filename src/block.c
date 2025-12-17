@@ -6,31 +6,16 @@
 #include <stdio.h>
 
 bool HasGravity(enum BlockType type) {
-  switch (type) {
-  case SAND:
-    return true;
-  default:
-    return false;
-  }
+  return BLOCKS[type].props & HAS_GRAVITY;
 }
 
 bool IsPassible(enum BlockType type) {
-  switch (type) {
-  case AIR:
-    return true;
-  default:
-    return false;
-  }
+  return BLOCKS[type].props & IS_PASSIBLE;
 }
 
-bool CanSlide(enum BlockType type) {
-  switch (type) {
-  case SAND:
-    return true;
-  default:
-    return false;
-  }
-}
+bool CanSlide(enum BlockType type) { return BLOCKS[type].props & CAN_SLIDE; }
+
+bool IsFluid(enum BlockType type) { return BLOCKS[type].props & IS_FLUID; }
 
 Color GenBlockColor(enum BlockType type) {
   BlockDef b = BLOCKS[type];
