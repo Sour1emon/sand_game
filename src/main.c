@@ -98,6 +98,8 @@ void handleNonGameScreen(menu *currentMenu) {}
 
 int main() {
 
+  bool paused = false;
+
   pcg32_init((uint64_t)time(NULL));
 
   // Init game state
@@ -132,9 +134,13 @@ int main() {
     int mouseX = GetMouseX();
     int mouseY = GetMouseY();
 
+    if (IsKeyPressed(KEY_P)) {
+      paused = !paused;
+    }
+
     // The 0.98 is to give it a buffer, hopefully keeping the actual physics
     // fps closer to the target
-    if (timeSincePhysicsFrame >= (1.0 / PHYSICS_FPS) * 0.98) {
+    if (timeSincePhysicsFrame >= (1.0 / PHYSICS_FPS) * 0.98 && !paused) {
       timeSincePhysicsFrame = 0.0;
 
       // Update the world
