@@ -14,7 +14,9 @@
 #include "utils.h"
 #include "world.h"
 
-inline int EnsureOdd(int value) { return (value % 2 == 0) ? value + 1 : value; }
+static inline int EnsureOdd(int value) {
+  return (value % 2 == 0) ? value + 1 : value;
+}
 
 void ProcessKeys(game_state *state) {
   // Keybinds for switching the selected block type

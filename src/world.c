@@ -5,14 +5,14 @@
 #include <stdlib.h>
 
 Block *getBlock(unsigned int x, unsigned int y) {
-  if (x > WORLD_WIDTH || y > WORLD_HEIGHT) {
+  if (x >= WORLD_WIDTH || y >= WORLD_HEIGHT) {
     return NULL;
   }
   return &_state.world[y][x];
 }
 
 bool setBlock(unsigned int x, unsigned int y, Block block) {
-  if (x > WORLD_WIDTH || y > WORLD_HEIGHT) {
+  if (x >= WORLD_WIDTH || y >= WORLD_HEIGHT) {
     return false;
   }
   _state.world[y][x] = block;
@@ -30,7 +30,7 @@ void worldTick() {
   bool processed[WORLD_HEIGHT][WORLD_WIDTH] = {false};
 
   for (int y = 0; y < WORLD_HEIGHT; y++) {
-    for (unsigned int x = 0; x < WORLD_WIDTH; x++) {
+    for (int x = 0; x < WORLD_WIDTH; x++) {
       if (processed[y][x]) {
         continue;
       }

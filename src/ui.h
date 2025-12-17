@@ -3,7 +3,7 @@
 #include "raylib.h"
 #include "state.h"
 
-Font font;
+extern Font font;
 
 bool initFont();
 

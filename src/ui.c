@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+Font font;
+
 // Return false if the font fails to load.
 bool initFont() {
   // TODO: Ensure font loads correctly
