@@ -32,14 +32,67 @@ void ProcessKeys(game_state *state) {
   }
 }
 
+void drawWorld(game_state *state, int mouseX, int mouseY) {
+
+  // Draw the blocks on the screen
+  for (int y = 0; y < WORLD_HEIGHT; y++) {
+    int screenY = (WORLD_HEIGHT - y - 1) * PX_SCALE + WORLD_SCREEN_TOP_LEFT_Y;
+    for (int x = 0; x < WORLD_WIDTH; x++) {
+
+      int screenX = x * PX_SCALE + WORLD_SCREEN_TOP_LEFT_X;
+
+      Block *block = getBlock(x, y);
+      switch (block->type) {
+      case AIR:
+        break;
+      case SAND:
+      case ROCK:
+        DrawRectangle(screenX, screenY, PX_SCALE, PX_SCALE, block->color);
+        break;
+      case BLOCK_TYPES_COUNT:
+        // This branch should never be reached
+        errx(EXIT_FAILURE, "Found block of type BLOCK_TYPES_COUNT which "
+                           "should never happen");
+      }
+    }
+  }
+
+  // Draw grid
+  for (int y = 0; y < WORLD_HEIGHT + 1; y++) {
+    DrawLine(WORLD_SCREEN_TOP_LEFT_X, y * PX_SCALE + WORLD_SCREEN_TOP_LEFT_Y,
+             WORLD_SCREEN_BOTTOM_RIGHT_X,
+             y * PX_SCALE + WORLD_SCREEN_TOP_LEFT_Y, GRID_LINE_COLOR);
+  }
+
+  for (int x = 0; x < WORLD_WIDTH + 1; x++) {
+    DrawLine(x * PX_SCALE + WORLD_SCREEN_TOP_LEFT_X, WORLD_SCREEN_TOP_LEFT_Y,
+             x * PX_SCALE + WORLD_SCREEN_TOP_LEFT_X,
+             WORLD_SCREEN_BOTTOM_RIGHT_Y, GRID_LINE_COLOR);
+  }
+
+  // TODO: Fix the weird mouse bug where moving the mouse past the left
+  // window border will blink a box near the right window border for a brief
+  // moment
+
+  // Render cursor outline on screen
+  if (mouseX >= WORLD_SCREEN_TOP_LEFT_X && mouseY >= WORLD_SCREEN_TOP_LEFT_Y &&
+      mouseX < WORLD_SCREEN_BOTTOM_RIGHT_X &&
+      mouseY < WORLD_SCREEN_BOTTOM_RIGHT_Y) {
+    int screenX = ((int)mouseX / PX_SCALE) * PX_SCALE;
+    int screenY = ((int)mouseY / PX_SCALE) * PX_SCALE;
+
+    DrawRectangleLines(screenX - (state->placeWidth - 1) / 2 * PX_SCALE,
+                       screenY - (state->placeWidth - 1) / 2 * PX_SCALE,
+                       PX_SCALE * state->placeWidth,
+                       PX_SCALE * state->placeWidth, RAYWHITE);
+  }
+}
+
+typedef enum { MAIN_MENU, GAME_SCREEN, SETTINGS_MENU } menu;
+
 int main() {
 
   pcg32_init((uint64_t)time(NULL));
-
-  // TODO: Add the world to the game state
-
-  // Initialize world
-  initWorldState();
 
   // Init game state
   initGameState();
@@ -54,9 +107,11 @@ int main() {
 
   float timeSincePhysicsFrame = 0;
 
+  menu currentMenu = MAIN_MENU;
+
   // Main loop
   while (!WindowShouldClose()) {
-    game_state *state = getState();
+    game_state *state = &_state;
 
     ProcessKeys(state);
 
@@ -111,59 +166,7 @@ int main() {
       }
     }
 
-    // Draw the blocks on the screen
-    for (int y = 0; y < WORLD_HEIGHT; y++) {
-      int screenY = (WORLD_HEIGHT - y - 1) * PX_SCALE + WORLD_SCREEN_TOP_LEFT_Y;
-      for (int x = 0; x < WORLD_WIDTH; x++) {
-
-        int screenX = x * PX_SCALE + WORLD_SCREEN_TOP_LEFT_X;
-
-        Block *block = getBlock(x, y);
-        switch (block->type) {
-        case AIR:
-          break;
-        case SAND:
-        case ROCK:
-          DrawRectangle(screenX, screenY, PX_SCALE, PX_SCALE, block->color);
-          break;
-        case BLOCK_TYPES_COUNT:
-          // This branch should never be reached
-          errx(EXIT_FAILURE, "Found block of type BLOCK_TYPES_COUNT which "
-                             "should never happen");
-        }
-      }
-    }
-
-    // Draw grid
-    for (int y = 0; y < WORLD_HEIGHT + 1; y++) {
-      DrawLine(WORLD_SCREEN_TOP_LEFT_X, y * PX_SCALE + WORLD_SCREEN_TOP_LEFT_Y,
-               WORLD_SCREEN_BOTTOM_RIGHT_X,
-               y * PX_SCALE + WORLD_SCREEN_TOP_LEFT_Y, GRID_LINE_COLOR);
-    }
-
-    for (int x = 0; x < WORLD_WIDTH + 1; x++) {
-      DrawLine(x * PX_SCALE + WORLD_SCREEN_TOP_LEFT_X, WORLD_SCREEN_TOP_LEFT_Y,
-               x * PX_SCALE + WORLD_SCREEN_TOP_LEFT_X,
-               WORLD_SCREEN_BOTTOM_RIGHT_Y, GRID_LINE_COLOR);
-    }
-
-    // TODO: Fix the weird mouse bug where moving the mouse past the left
-    // window border will blink a box near the right window border for a brief
-    // moment
-
-    // Render cursor outline on screen
-    if (mouseX >= WORLD_SCREEN_TOP_LEFT_X &&
-        mouseY >= WORLD_SCREEN_TOP_LEFT_Y &&
-        mouseX < WORLD_SCREEN_BOTTOM_RIGHT_X &&
-        mouseY < WORLD_SCREEN_BOTTOM_RIGHT_Y) {
-      int screenX = ((int)mouseX / PX_SCALE) * PX_SCALE;
-      int screenY = ((int)mouseY / PX_SCALE) * PX_SCALE;
-
-      DrawRectangleLines(screenX - (state->placeWidth - 1) / 2 * PX_SCALE,
-                         screenY - (state->placeWidth - 1) / 2 * PX_SCALE,
-                         PX_SCALE * state->placeWidth,
-                         PX_SCALE * state->placeWidth, RAYWHITE);
-    }
+    drawWorld(state, mouseX, mouseY);
 
     // Draw the interface at the bottom of the screen
     drawInterface(state);
