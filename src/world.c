@@ -1,4 +1,5 @@
 #include "world.h"
+#include "block.h"
 #include "consts.h"
 #include "rng.h"
 #include "state.h"
@@ -45,32 +46,73 @@ void worldTick() {
           continue;
         }
 
-        // If can't fall straight, try sliding diagonally
-        if (CanSlide(block->type)) {
-          Block *leftBlock = getBlock(x - 1, y - 1);
+        // Check to see if the block below is water
+        if (IsFluid(below->type)) {
+          // Check which blocks are passible
+          // Order: above -> side -> diagonal -> swap (last resort)
+          // TODO: Find a better last resort method because this might teleport
+          // blocks up too far
+
+          // Check the block above the current one to see if it is passible
+          Block *above = getBlock(x, y + 1);
+          if (above != NULL && IsPassible(above->type)) {
+            swap(below, block);
+            processed[y - 1][x] = true;
+            processed[y][x] = true;
+            continue;
+          }
+
+          // Check if the blocks next to the fluid are passible
+          Block *leftBlock = getBlock(x - 1, y + 1);
           bool isLeftPassible =
-              leftBlock != NULL ? IsPassible(leftBlock->type) &&
-                                      IsPassible(_state.world[y][x - 1].type)
-                                : false;
-          Block *rightBlock = getBlock(x + 1, y - 1);
+              leftBlock != NULL ? IsPassible(leftBlock->type) : false;
+
+          Block *rightBlock = getBlock(x + 1, y + 1);
           bool isRightPassible =
-              rightBlock != NULL ? IsPassible(rightBlock->type) &&
-                                       IsPassible(_state.world[y][x + 1].type)
-                                 : false;
+              rightBlock != NULL ? IsPassible(rightBlock->type) : false;
+
           if (isLeftPassible && isRightPassible) {
             bool slideLeft = pcg32_bool();
             swap(slideLeft ? leftBlock : rightBlock, block);
-            processed[y - 1][x + (slideLeft ? -1 : 1)] = true;
+            processed[y + 1][x + (slideLeft ? -1 : 1)] = true;
             processed[y][x] = true;
           } else if (isLeftPassible) {
             swap(leftBlock, block);
-            processed[y - 1][x - 1] = true;
+            processed[y + 1][x - 1] = true;
             processed[y][x] = true;
           } else if (isRightPassible) {
             swap(rightBlock, block);
-            processed[y - 1][x + 1] = true;
+            processed[y + 1][x + 1] = true;
             processed[y][x] = true;
           }
+        }
+      }
+
+      // If can't fall straight, try sliding diagonally
+      if (CanSlide(block->type)) {
+        Block *leftBlock = getBlock(x - 1, y - 1);
+        bool isLeftPassible = leftBlock != NULL
+                                  ? IsPassible(leftBlock->type) &&
+                                        IsPassible(_state.world[y][x - 1].type)
+                                  : false;
+        Block *rightBlock = getBlock(x + 1, y - 1);
+        bool isRightPassible = rightBlock != NULL
+                                   ? IsPassible(rightBlock->type) &&
+                                         IsPassible(_state.world[y][x + 1].type)
+                                   : false;
+        if (isLeftPassible && isRightPassible) {
+          bool slideLeft = pcg32_bool();
+          swap(slideLeft ? leftBlock : rightBlock, block);
+          processed[y - 1][x + (slideLeft ? -1 : 1)] = true;
+          processed[y][x] = true;
+        } else if (isLeftPassible) {
+          swap(leftBlock, block);
+          processed[y - 1][x - 1] = true;
+          processed[y][x] = true;
+        } else if (isRightPassible) {
+          swap(rightBlock, block);
+          processed[y - 1][x + 1] = true;
+          processed[y][x] = true;
         }
       }
     }

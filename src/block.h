@@ -24,6 +24,7 @@ typedef enum {
 bool HasGravity(enum BlockType type);
 bool IsPassible(enum BlockType type);
 bool CanSlide(enum BlockType type);
+bool IsFluid(enum BlockType type);
 
 Color GenBlockColor(enum BlockType type);
 

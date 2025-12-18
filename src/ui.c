@@ -7,11 +7,14 @@
 #include <stdlib.h>
 
 Font font;
+Font font_bold;
 
 // Return false if the font fails to load.
 bool initFont() {
   // TODO: Ensure font loads correctly
-  font = LoadFontEx("resources/pixantiqua.ttf", 32, NULL, 250);
+  font = LoadFontEx("resources/PixelifySans-Regular.ttf", 32, NULL, 250);
+  font_bold = LoadFontEx("resources/PixelifySans-Bold.ttf", 32, NULL, 250);
+
   return true;
 }
 
@@ -58,10 +61,10 @@ static void drawBlockAtIndex(game_state *state, int i, int posX, int startY,
   if (i == 2) {
     size *= MIDDLE_BLOCK_SCALE;
     const char *displayName = BLOCKS[state->selectedBlockType].displayName;
-    Vector2 textSize = MeasureTextEx(font, displayName, fontSize, 2);
+    Vector2 textSize = MeasureTextEx(font, displayName, fontSize, 0.0);
     DrawTextEx(font, displayName,
                (Vector2){posX + (size - textSize.x) / 2, startY - textSize.y},
-               fontSize, 2, RAYWHITE);
+               fontSize, 0.02, RAYWHITE);
   } else {
     posY += blockSize * scaleAdded / 2;
   }
@@ -82,7 +85,7 @@ static Vector2 drawBlockPicker(game_state *state, int startX, int startY) {
   // The text used for MeasureTextEx does not really matter as long as its upper
   // case. This ensures the position of everything else is offset based on the
   // block name text that is displayed
-  const float HEIGHT_OFFSET = MeasureTextEx(font, "ABC123", FONT_SIZE, 2).y;
+  const float HEIGHT_OFFSET = MeasureTextEx(font, "ABC123", FONT_SIZE, 0.0).y;
   int yOffset = SCALE_ADDED * BLOCK_SIZE / 2 + HEIGHT_OFFSET;
 
   // Draw blocks
@@ -102,18 +105,18 @@ static Vector2 drawBlockPicker(game_state *state, int startX, int startY) {
   // Draw instruction text
   int selectorWidth = endX + BLOCK_SIZE * TWO_THIRDS - startX;
   const char *message = "Press A/D to switch blocks";
-  Vector2 size = MeasureTextEx(font, message, FONT_SIZE, 2);
+  Vector2 size = MeasureTextEx(font, message, FONT_SIZE, 0.0);
   const float y = startY + BLOCK_SIZE * MIDDLE_BLOCK_SCALE + PADDING +
                   SPACING_FROM_SELECTOR;
   DrawTextEx(font, message, (Vector2){startX + (selectorWidth - size.x) / 2, y},
-             FONT_SIZE, 2, YELLOW);
+             FONT_SIZE, 0.0, YELLOW);
   return (Vector2){endX + BLOCK_SIZE * TWO_THIRDS, y + size.y};
 }
 
 static void drawBlockPlaceWidth(game_state *state, int startX, int startY) {
   char *str;
   asprintf(&str, "Block Place Width: %d", state->placeWidth);
-  DrawTextEx(font, str, (Vector2){startX, startY}, 20.0f, 2.0f, RAYWHITE);
+  DrawTextEx(font, str, (Vector2){startX, startY}, 20.0f, 0.0, RAYWHITE);
 }
 
 void drawInterface(game_state *state) {

@@ -94,7 +94,98 @@ void drawWorld(game_state *state, int mouseX, int mouseY) {
 
 typedef enum { MAIN_MENU, GAME_SCREEN, SETTINGS_MENU } menu;
 
-void handleNonGameScreen(menu *currentMenu) {}
+void DrawTextCentered(Font font, const char *text, Vector2 position,
+                      float fontSize, float spacing, Color tint) {
+  Vector2 size = MeasureTextEx(font, text, fontSize, spacing);
+  DrawTextEx(font, text,
+             (Vector2){position.x - size.x / 2, position.y - size.y / 2},
+             fontSize, spacing, tint);
+}
+
+typedef void (*buttonActionFunc)(menu *);
+
+void DrawButton(int x, int y, int width, int height, const char *text,
+                menu *currentMenu, buttonActionFunc actionFunc) {
+  Vector2 mousePos = GetMousePosition();
+
+  const int FONT_SIZE = 35.0f;
+  const float HOVER_SCALE = 0.1f;
+  Rectangle rect =
+      (Rectangle){x - width / 2.0, y - height / 2.0, width, height};
+  bool isHover = CheckCollisionPointRec(mousePos, rect);
+  if (isHover) {
+    rect.x -= width * HOVER_SCALE / 2;
+    rect.y -= height * HOVER_SCALE / 2;
+    rect.width += width * HOVER_SCALE;
+    rect.height += height * HOVER_SCALE;
+  }
+  DrawRectangleLines(rect.x, rect.y, rect.width, rect.height, RAYWHITE);
+  DrawTextCentered(font, text, (Vector2){x, y},
+                   FONT_SIZE + (isHover ? FONT_SIZE * HOVER_SCALE : 0), 0,
+                   RAYWHITE);
+  if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && isHover) {
+    actionFunc(currentMenu);
+  }
+}
+
+void newGameButtonAction(menu *currentMenu) {
+  initGameState();
+  *currentMenu = GAME_SCREEN;
+}
+
+void resumeGameButtonAction(menu *currentMenu) { *currentMenu = GAME_SCREEN; }
+
+void openSettingsButtonAction(menu *currentMenu) {
+  *currentMenu = SETTINGS_MENU;
+}
+
+void quitGameButtonAction(menu *_) { exit(0); }
+
+#define BUTTON_COUNT 4
+
+void handleNonGameScreen(menu *currentMenu) {
+  BeginDrawing();
+  ClearBackground(BLACK);
+
+  if (*currentMenu == MAIN_MENU) {
+
+    // Draw the title at the top of the screen
+    const float TITLE_FONT_SIZE = 100.0f;
+
+    const char *title = "Sand Game";
+    const Vector2 titleSize = MeasureTextEx(font, title, TITLE_FONT_SIZE, 0);
+
+    DrawTextEx(font_bold, title,
+               (Vector2){(SCREEN_WIDTH - titleSize.x) / 2, 75}, TITLE_FONT_SIZE,
+               0.0f, RAYWHITE);
+
+    // Draw the buttons on the screen
+    const int BUTTON_WIDTH = 300.0f;
+    const int BUTTON_HEIGHT = 50.0f;
+    const int BUTTON_PADDING = 35.0f;
+    const int MIDDLE_OFFSET = 150.0f;
+    int x = SCREEN_WIDTH / 2;
+    int y = SCREEN_HEIGHT / 2.0 + MIDDLE_OFFSET -
+            (BUTTON_HEIGHT - BUTTON_PADDING) * 3;
+
+    const char *buttonText[BUTTON_COUNT] = {"New Game", "Resume Game",
+                                            "Settings", "Quit Game"};
+    const buttonActionFunc buttonActions[BUTTON_COUNT] = {
+        newGameButtonAction, resumeGameButtonAction, openSettingsButtonAction,
+        quitGameButtonAction};
+
+    for (int i = 0; i < BUTTON_COUNT; i++) {
+      // The currentMenu needs to be passed so the button action can be called
+      // correctly
+      DrawButton(x, y, BUTTON_WIDTH, BUTTON_HEIGHT, buttonText[i], currentMenu,
+                 buttonActions[i]);
+
+      y += BUTTON_PADDING + BUTTON_HEIGHT;
+    }
+  }
+
+  EndDrawing();
+}
 
 int main() {
 
@@ -117,11 +208,23 @@ int main() {
 
   menu currentMenu = MAIN_MENU;
 
+  bool canPlace = true;
+
   // Main loop
   while (!WindowShouldClose()) {
 
     if (currentMenu != GAME_SCREEN) {
+      // Need to make sure that when the menu changes, if the mouse is pressed
+      // down it will not place any blocks until the user represses the mouse
+      if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+        canPlace = false;
+      }
       handleNonGameScreen(&currentMenu);
+      continue;
+    }
+
+    if (!canPlace && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+      canPlace = true;
     }
 
     game_state *state = &_state;
@@ -154,7 +257,7 @@ int main() {
         mouseY >= WORLD_SCREEN_TOP_LEFT_Y &&
         mouseX < WORLD_SCREEN_BOTTOM_RIGHT_X &&
         mouseY < WORLD_SCREEN_BOTTOM_RIGHT_Y) {
-      if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+      if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && canPlace) {
         int gridX = (mouseX - WORLD_SCREEN_TOP_LEFT_X) / PX_SCALE;
         // Correct grid position because the the y coordinates of blocks are
         // flipped before rendering

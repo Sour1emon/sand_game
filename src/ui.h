@@ -4,6 +4,7 @@
 #include "state.h"
 
 extern Font font;
+extern Font font_bold;
 
 bool initFont();
 
