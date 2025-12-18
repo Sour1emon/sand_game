@@ -198,6 +198,10 @@ int main() {
 
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Sand Game");
 
+  // The exit key by default is [Escape] which we use for going back to the main
+  // menu
+  SetExitKey(KEY_NULL);
+
   initFont();
 
   SetTextLineSpacing(16);
@@ -213,6 +217,10 @@ int main() {
   // Main loop
   while (!WindowShouldClose()) {
 
+    // Add a keybind to go back to the main menu
+    if (IsKeyPressed(MAIN_MENU_KEY)) {
+      currentMenu = MAIN_MENU;
+    }
     if (currentMenu != GAME_SCREEN) {
       // Need to make sure that when the menu changes, if the mouse is pressed
       // down it will not place any blocks until the user represses the mouse
@@ -259,7 +267,7 @@ int main() {
         mouseY < WORLD_SCREEN_BOTTOM_RIGHT_Y) {
       if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && canPlace) {
         int gridX = (mouseX - WORLD_SCREEN_TOP_LEFT_X) / PX_SCALE;
-        // Correct grid position because the the y coordinates of blocks are
+        // Correct grid position because the y coordinates of blocks are
         // flipped before rendering
         int gridY =
             WORLD_HEIGHT - (mouseY - WORLD_SCREEN_TOP_LEFT_Y) / PX_SCALE - 1;
