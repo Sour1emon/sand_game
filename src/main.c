@@ -153,11 +153,11 @@ void handleNonGameScreen(menu *currentMenu) {
     const float TITLE_FONT_SIZE = 100.0f;
 
     const char *title = "Sand Game";
-    const Vector2 titleSize = MeasureTextEx(font, title, TITLE_FONT_SIZE, 0);
 
-    DrawTextEx(font_bold, title,
-               (Vector2){(SCREEN_WIDTH - titleSize.x) / 2, 75}, TITLE_FONT_SIZE,
-               0.0f, RAYWHITE);
+    DrawTextCentered(font_bold, title, (Vector2){SCREEN_WIDTH / 2.0, 85},
+                     TITLE_FONT_SIZE,
+
+                     0.0f, RAYWHITE);
 
     // Draw the buttons on the screen
     const int BUTTON_WIDTH = 300.0f;
@@ -182,6 +182,12 @@ void handleNonGameScreen(menu *currentMenu) {
 
       y += BUTTON_PADDING + BUTTON_HEIGHT;
     }
+  } else if (*currentMenu == SETTINGS_MENU) {
+    DrawTextCentered(font_bold, "Settings", (Vector2){SCREEN_WIDTH / 2.0, 50},
+                     70.0f, 0.0f, RAYWHITE);
+    DrawTextCentered(font, "Press [Esc] to go back!",
+                     (Vector2){SCREEN_WIDTH / 2.0, SCREEN_HEIGHT - 30.0f},
+                     20.0f, 0.0f, YELLOW);
   }
 
   EndDrawing();
