@@ -33,4 +33,4 @@ enum {
 
 #define GRID_LINE_COLOR ((Color){50, 50, 50, 255})
 
-#define AIR_BLOCK ((Block){.type = AIR, .color = {0, 0, 0, 0}})
+#define AIR_BLOCK ((Block){.type = AIR, .color = {0, 0, 0, 0}, .movementDir = DIR_NONE})

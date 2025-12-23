@@ -49,13 +49,16 @@ void drawWorld(game_state *state, int mouseX, int mouseY) {
       switch (block->type) {
       case AIR:
         break;
-      case BLOCK_TYPES_COUNT:
-        // This branch should never be reached
-        errx(EXIT_FAILURE, "Found block of type BLOCK_TYPES_COUNT which "
-                           "should never happen");
+      case SAND:
+      case GRAVEL:
+      case ROCK:
+      case WATER:
+        DrawRectangle(screenX, screenY, PX_SCALE, PX_SCALE, block->color);
         break;
       default:
-        DrawRectangle(screenX, screenY, PX_SCALE, PX_SCALE, block->color);
+        // This branch should never be reached
+        errx(EXIT_FAILURE, "Found invalid block type %d at position (%d, %d) which "
+                           "should never happen", block->type, x, y);
         break;
       }
     }
@@ -290,10 +293,10 @@ int main() {
             // GetBlock
             if (targetBlock != NULL &&
                 targetBlock->type != state->selectedBlockType) {
-              setBlock(
-                  x, y,
-                  (Block){.type = state->selectedBlockType,
-                          .color = GenBlockColor(state->selectedBlockType)});
+              setBlock(x, y,
+                       (Block){.type = state->selectedBlockType,
+                               .color = GenBlockColor(state->selectedBlockType),
+                               .movementDir = DIR_NONE});
             }
           }
         }

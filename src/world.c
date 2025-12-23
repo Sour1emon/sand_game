@@ -47,9 +47,10 @@ void worldTick() {
         }
 
         // Check to see if the block below is water
-        if (!IsFluid(block -> type) && IsFluid(below->type)) {
+        if (!IsFluid(block->type) && IsFluid(below->type)) {
           // Check which blocks are passible
-          // Order: above -> side -> lower diagonal -> upper diagonal -> swap (last resort)
+          // Order: above -> side -> lower diagonal -> upper diagonal -> swap
+          // (last resort)
           // TODO: Find a better last resort method because this might teleport
           // blocks up too far
 
@@ -93,7 +94,6 @@ void worldTick() {
             processed[y][x] = true;
             continue;
           }
-
 
           // Check if the lower diagonals are passible
           leftBlock = getBlock(x - 1, y - 2);
@@ -157,9 +157,9 @@ void worldTick() {
 
           // Last resort swap
           swap(below, block);
-            processed[y - 1][x] = true;
-            processed[y][x] = true;
-            continue;
+          processed[y - 1][x] = true;
+          processed[y][x] = true;
+          continue;
         }
       }
 
@@ -180,14 +180,64 @@ void worldTick() {
           swap(slideLeft ? leftBlock : rightBlock, block);
           processed[y - 1][x + (slideLeft ? -1 : 1)] = true;
           processed[y][x] = true;
+          continue;
         } else if (isLeftPassible) {
           swap(leftBlock, block);
           processed[y - 1][x - 1] = true;
           processed[y][x] = true;
+          continue;
         } else if (isRightPassible) {
           swap(rightBlock, block);
           processed[y - 1][x + 1] = true;
           processed[y][x] = true;
+          continue;
+        }
+      }
+
+      // Move fluids side to side
+      // TODO: Fix weird fluid movement logic where going one direction it will
+      // clump together but the other it will break apart
+      if (IsFluid(block->type)) {
+        Block *leftBlock = getBlock(x - 1, y);
+        bool isLeftPassible =
+            leftBlock != NULL ? IsPassible(leftBlock->type) : false;
+
+        Block *rightBlock = getBlock(x + 1, y);
+        bool isRightPassible =
+            rightBlock != NULL ? IsPassible(rightBlock->type) : false;
+        // Make sure there is a place to move before doing other checks
+        if (isLeftPassible || isRightPassible) {
+
+          if (isLeftPassible && !isRightPassible) {
+            // Only the left is passible
+            block->movementDir = DIR_LEFT;
+          } else if (!isLeftPassible && isRightPassible) {
+            // Only the right is passible
+            block->movementDir = DIR_RIGHT;
+          } else if (block->movementDir == DIR_NONE) {
+            // Randomly generate a new fluid direction
+            block->movementDir = pcg32_bool() ? DIR_LEFT : DIR_RIGHT;
+          }
+
+          if (block->movementDir == DIR_LEFT) {
+            Direction leftDir = leftBlock->movementDir;
+            Direction currentDir = block->movementDir;
+            swap(leftBlock, block);
+            block->movementDir = leftDir;
+            leftBlock->movementDir = currentDir;
+            processed[y][x - 1] = true;
+            processed[y][x] = true;
+            continue;
+          } else if (block->movementDir == DIR_RIGHT) {
+            Direction rightDir = rightBlock->movementDir;
+            Direction currentDir = block->movementDir;
+            swap(rightBlock, block);
+            block->movementDir = rightDir;
+            rightBlock->movementDir = currentDir;
+            processed[y][x + 1] = true;
+            processed[y][x] = true;
+            continue;
+          }
         }
       }
     }
