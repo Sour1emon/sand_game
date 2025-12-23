@@ -36,9 +36,9 @@ void worldTick() {
         continue;
       }
       Block *block = getBlock(x, y);
-      if (y > 0 && HasGravity(block->type)) {
+      Block *below = getBlock(x, y - 1);
+      if (y > 0 && HasGravity(block->type) && below != NULL) {
         // Try falling straight down first
-        Block *below = getBlock(x, y - 1);
         if (IsPassible(below->type)) {
           swap(block, below);
           processed[y - 1][x] = true;
@@ -47,9 +47,9 @@ void worldTick() {
         }
 
         // Check to see if the block below is water
-        if (IsFluid(below->type)) {
+        if (!IsFluid(block -> type) && IsFluid(below->type)) {
           // Check which blocks are passible
-          // Order: above -> side -> diagonal -> swap (last resort)
+          // Order: above -> side -> lower diagonal -> upper diagonal -> swap (last resort)
           // TODO: Find a better last resort method because this might teleport
           // blocks up too far
 
@@ -62,29 +62,104 @@ void worldTick() {
             continue;
           }
 
+          // TODO: Move this code into a new function
+
           // Check if the blocks next to the fluid are passible
-          Block *leftBlock = getBlock(x - 1, y + 1);
+          Block *leftBlock = getBlock(x - 1, y - 1);
           bool isLeftPassible =
               leftBlock != NULL ? IsPassible(leftBlock->type) : false;
 
-          Block *rightBlock = getBlock(x + 1, y + 1);
+          Block *rightBlock = getBlock(x + 1, y - 1);
           bool isRightPassible =
               rightBlock != NULL ? IsPassible(rightBlock->type) : false;
 
           if (isLeftPassible && isRightPassible) {
             bool slideLeft = pcg32_bool();
             swap(slideLeft ? leftBlock : rightBlock, block);
-            processed[y + 1][x + (slideLeft ? -1 : 1)] = true;
+            processed[y - 1][x + (slideLeft ? -1 : 1)] = true;
+            processed[y - 1][x] = true;
             processed[y][x] = true;
+            continue;
           } else if (isLeftPassible) {
             swap(leftBlock, block);
-            processed[y + 1][x - 1] = true;
+            processed[y - 1][x - 1] = true;
+            processed[y - 1][x] = true;
             processed[y][x] = true;
+            continue;
           } else if (isRightPassible) {
             swap(rightBlock, block);
-            processed[y + 1][x + 1] = true;
+            processed[y - 1][x + 1] = true;
+            processed[y - 1][x] = true;
             processed[y][x] = true;
+            continue;
           }
+
+
+          // Check if the lower diagonals are passible
+          leftBlock = getBlock(x - 1, y - 2);
+          isLeftPassible =
+              leftBlock != NULL ? IsPassible(leftBlock->type) : false;
+
+          rightBlock = getBlock(x + 1, y - 2);
+          isRightPassible =
+              rightBlock != NULL ? IsPassible(rightBlock->type) : false;
+
+          if (isLeftPassible && isRightPassible) {
+            bool slideLeft = pcg32_bool();
+            swap(slideLeft ? leftBlock : rightBlock, block);
+            processed[y - 2][x + (slideLeft ? -1 : 1)] = true;
+            processed[y - 1][x] = true;
+            processed[y][x] = true;
+            continue;
+          } else if (isLeftPassible) {
+            swap(leftBlock, block);
+            processed[y - 2][x - 1] = true;
+            processed[y - 1][x] = true;
+            processed[y][x] = true;
+            continue;
+          } else if (isRightPassible) {
+            swap(rightBlock, block);
+            processed[y - 2][x + 1] = true;
+            processed[y - 1][x] = true;
+            processed[y][x] = true;
+            continue;
+          }
+
+          // Check if the upper diagonals are passible
+          leftBlock = getBlock(x - 1, y);
+          isLeftPassible =
+              leftBlock != NULL ? IsPassible(leftBlock->type) : false;
+
+          rightBlock = getBlock(x + 1, y);
+          isRightPassible =
+              rightBlock != NULL ? IsPassible(rightBlock->type) : false;
+
+          if (isLeftPassible && isRightPassible) {
+            bool slideLeft = pcg32_bool();
+            swap(slideLeft ? leftBlock : rightBlock, block);
+            processed[y][x + (slideLeft ? -1 : 1)] = true;
+            processed[y - 1][x] = true;
+            processed[y][x] = true;
+            continue;
+          } else if (isLeftPassible) {
+            swap(leftBlock, block);
+            processed[y][x - 1] = true;
+            processed[y - 1][x] = true;
+            processed[y][x] = true;
+            continue;
+          } else if (isRightPassible) {
+            swap(rightBlock, block);
+            processed[y][x + 1] = true;
+            processed[y - 1][x] = true;
+            processed[y][x] = true;
+            continue;
+          }
+
+          // Last resort swap
+          swap(below, block);
+            processed[y - 1][x] = true;
+            processed[y][x] = true;
+            continue;
         }
       }
 

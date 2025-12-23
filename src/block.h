@@ -28,6 +28,8 @@ bool IsFluid(enum BlockType type);
 
 Color GenBlockColor(enum BlockType type);
 
+typedef enum { DIR_NONE, DIR_LEFT, DIR_RIGHT } Direction;
+
 typedef struct {
   enum BlockType type;
   const char *displayName;
@@ -37,7 +39,10 @@ typedef struct {
   int lightnessVar;
   // Saturation variation in percent
   int saturationVar;
-
+  // Only for liquids so they keep moving in the same direction
+  // In non liquids, this will have a garbage value because it will never be
+  // initialized, and hopefully never used
+  Direction movementDir;
 } BlockDef;
 
 static const BlockDef BLOCKS[BLOCK_TYPES_COUNT] = {
@@ -70,7 +75,8 @@ static const BlockDef BLOCKS[BLOCK_TYPES_COUNT] = {
                          .color = RGBA(28, 163, 236, 255),
                          .props = HAS_GRAVITY | CAN_SLIDE | IS_FLUID,
                          .lightnessVar = 4,
-                         .saturationVar = 2}};
+                         .saturationVar = 2,
+                         .movementDir = DIR_NONE}};
 
 typedef struct {
   enum BlockType type;
