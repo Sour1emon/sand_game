@@ -53,6 +53,7 @@ void drawWorld(game_state *state, int mouseX, int mouseY) {
       case GRAVEL:
       case ROCK:
       case WATER:
+      case SMOKE:
         DrawRectangle(screenX, screenY, PX_SCALE, PX_SCALE, block->color);
         break;
       default:

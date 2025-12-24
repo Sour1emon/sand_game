@@ -30,14 +30,26 @@ void worldTick() {
 
   bool processed[WORLD_HEIGHT][WORLD_WIDTH] = {false};
 
+  // Handle blocks that fall down
   for (int y = 0; y < WORLD_HEIGHT; y++) {
     for (int x = 0; x < WORLD_WIDTH; x++) {
       if (processed[y][x]) {
         continue;
       }
+
       Block *block = getBlock(x, y);
       Block *below = getBlock(x, y - 1);
-      if (y > 0 && HasGravity(block->type) && below != NULL) {
+
+      if (block == NULL || below == NULL) {
+        continue;
+      }
+
+      // Skip gases because they are handled later
+      if (IsGas(block->type)) {
+        continue;
+      }
+
+      if (y > 0 && HasGravity(block->type)) {
         // Try falling straight down first
         if (IsPassible(below->type)) {
           swap(block, below);
@@ -239,6 +251,35 @@ void worldTick() {
             continue;
           }
         }
+      }
+    }
+  }
+
+  // Handle blocks that float upward
+  // TODO: Allow smoke to move diagonally
+  for (int y = WORLD_HEIGHT - 1; y >= 0; y--) {
+    for (int x = 0; x < WORLD_WIDTH; x++) {
+      if (processed[y][x]) {
+        continue;
+      }
+
+      Block *block = getBlock(x, y);
+      Block *above = getBlock(x, y + 1);
+
+      if (block == NULL || above == NULL) {
+        continue;
+      }
+
+      // Skip non gases since they were handled earlier
+      if (!IsGas(block->type)) {
+        continue;
+      }
+
+      if (IsGas(block->type) && IsPassible(above->type) &&
+          block->type != above->type) {
+        swap(block, above);
+        processed[y][x] = true;
+        processed[y + 1][x] = true;
       }
     }
   }

@@ -6,16 +6,24 @@
 #include <stdio.h>
 
 bool HasGravity(enum BlockType type) {
-  return BLOCKS[type].props & HAS_GRAVITY;
+  return HAS_PROPERTY(BLOCKS[type].props, HAS_GRAVITY);
 }
 
 bool IsPassible(enum BlockType type) {
-  return BLOCKS[type].props & IS_PASSIBLE;
+  return HAS_PROPERTY(BLOCKS[type].props, IS_PASSIBLE);
 }
 
-bool CanSlide(enum BlockType type) { return BLOCKS[type].props & CAN_SLIDE; }
+bool CanSlide(enum BlockType type) {
+  return HAS_PROPERTY(BLOCKS[type].props, CAN_SLIDE);
+}
 
-bool IsFluid(enum BlockType type) { return BLOCKS[type].props & IS_FLUID; }
+bool IsFluid(enum BlockType type) {
+  return HAS_PROPERTY(BLOCKS[type].props, IS_FLUID);
+}
+
+bool IsGas(enum BlockType type) {
+  return HAS_PROPERTY(BLOCKS[type].props, IS_GAS);
+}
 
 Color GenBlockColor(enum BlockType type) {
   BlockDef b = BLOCKS[type];
