@@ -1,6 +1,7 @@
 #include "ui.h"
 #include "block.h"
 #include "consts.h"
+#include "raylib.h"
 #include "state.h"
 #include "utils.h"
 #include <stdio.h>
@@ -11,9 +12,16 @@ Font font_bold;
 
 // Return false if the font fails to load.
 bool initFont() {
-  // TODO: Ensure font loads correctly
   font = LoadFontEx("resources/PixelifySans-Regular.ttf", 32, NULL, 250);
+  if (IsFontValid(font)) {
+    fprintf(stderr, "Failed to load PixelifySans-Regular.ttf");
+    return false;
+  }
   font_bold = LoadFontEx("resources/PixelifySans-Bold.ttf", 32, NULL, 250);
+  if (IsFontValid(font_bold)) {
+    fprintf(stderr, "Failed to load PixelifySans-Bold.ttf");
+    return false;
+  }
 
   return true;
 }
@@ -117,6 +125,7 @@ static void drawBlockPlaceWidth(game_state *state, int startX, int startY) {
   char *str;
   asprintf(&str, "Block Place Width: %d", state->placeWidth);
   DrawTextEx(font, str, (Vector2){startX, startY}, 20.0f, 0.0, RAYWHITE);
+  free(str);
 }
 
 void drawInterface(game_state *state) {

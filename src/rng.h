@@ -5,7 +5,7 @@
 
 // https://en.wikipedia.org/wiki/Permuted_congruential_generator
 
-static uint64_t state = 0x4d595df4d0f33173;
+extern uint64_t state;
 static uint64_t const multiplier = 6364136223846793005u;
 static uint64_t const increment = 1442695040888963407u;
 

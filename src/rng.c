@@ -1,5 +1,7 @@
 #include "rng.h"
 
+uint64_t state = 0x4d595df4d0f33173;
+
 uint32_t rotr32(uint32_t x, unsigned r) { return x >> r | x << (-r & 31); }
 
 uint32_t pcg32(void) {

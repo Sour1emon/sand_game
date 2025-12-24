@@ -58,8 +58,10 @@ void drawWorld(game_state *state, int mouseX, int mouseY) {
         break;
       default:
         // This branch should never be reached
-        errx(EXIT_FAILURE, "Found invalid block type %d at position (%d, %d) which "
-                           "should never happen", block->type, x, y);
+        errx(EXIT_FAILURE,
+             "Found invalid block type %d at position (%d, %d) which "
+             "should never happen",
+             block->type, x, y);
         break;
       }
     }
@@ -212,7 +214,12 @@ int main() {
   // menu
   SetExitKey(KEY_NULL);
 
-  initFont();
+  bool success = initFont();
+
+  if (!success) {
+    // Don't continue if the fonts don't load
+    return 1;
+  }
 
   SetTextLineSpacing(16);
 
