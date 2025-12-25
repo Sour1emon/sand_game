@@ -52,7 +52,9 @@ void setCellProcessed(uint64_t processed[BITMAP_SIZE], unsigned int x,
   unsigned int a = y * WORLD_WIDTH + x;
   unsigned int idx = a / UINT64_BITS;
   unsigned int rem = a % UINT64_BITS;
-  processed[idx] = (processed[idx] & ~(1 << rem)) | (value << rem);
+  // Cast value to 64-bit before shifting to avoid undefined behavior when
+  // rem >= 32 on platforms where int is 32 bits.
+  processed[idx] = (processed[idx] & ~(1ULL << rem)) | ((uint64_t)value << rem);
 }
 
 void worldTick() {
@@ -208,15 +210,22 @@ void worldTick() {
       // If can't fall straight, try sliding diagonally
       if (CanSlide(block->type)) {
         Block *leftBlock = getBlock(x - 1, y - 1);
-        bool isLeftPassible = leftBlock != NULL
-                                  ? IsPassible(leftBlock->type) &&
-                                        IsPassible(_state.world[y][x - 1].type)
-                                  : false;
+        bool isLeftPassible =
+            leftBlock != NULL
+                ? (IsPassible(leftBlock->type) || IsFluid(leftBlock->type)) &&
+                      (IsPassible(_state.world[y][x - 1].type) ||
+                       IsFluid(_state.world[y][x - 1].type)) &&
+                      leftBlock->type != block->type
+                : false;
         Block *rightBlock = getBlock(x + 1, y - 1);
-        bool isRightPassible = rightBlock != NULL
-                                   ? IsPassible(rightBlock->type) &&
-                                         IsPassible(_state.world[y][x + 1].type)
-                                   : false;
+        bool isRightPassible =
+            rightBlock != NULL
+                ? (IsPassible(rightBlock->type) || IsFluid(rightBlock->type)) &&
+                      (IsPassible(_state.world[y][x + 1].type) ||
+                       IsFluid(_state.world[y][x + 1].type)) &&
+                      rightBlock->type != block->type
+                : false;
+
         if (isLeftPassible && isRightPassible) {
           bool slideLeft = pcg32_bool();
           swap(slideLeft ? leftBlock : rightBlock, block);
