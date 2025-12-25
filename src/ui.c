@@ -13,12 +13,12 @@ Font font_bold;
 // Return false if the font fails to load.
 bool initFont() {
   font = LoadFontEx("resources/PixelifySans-Regular.ttf", 32, NULL, 250);
-  if (IsFontValid(font)) {
+  if (!IsFontValid(font)) {
     fprintf(stderr, "Failed to load PixelifySans-Regular.ttf");
     return false;
   }
   font_bold = LoadFontEx("resources/PixelifySans-Bold.ttf", 32, NULL, 250);
-  if (IsFontValid(font_bold)) {
+  if (!IsFontValid(font_bold)) {
     fprintf(stderr, "Failed to load PixelifySans-Bold.ttf");
     return false;
   }

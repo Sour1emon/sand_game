@@ -3,6 +3,7 @@
 #include "consts.h"
 #include "rng.h"
 #include "state.h"
+#include <stdint.h>
 #include <stdlib.h>
 
 Block *getBlock(unsigned int x, unsigned int y) {
@@ -26,14 +27,43 @@ static inline void swap(Block *a, Block *b) {
   *b = temp;
 }
 
+// Ceiling divide a by b
+// https://stackoverflow.com/a/2745086
+#define CEIL_DIV(a, b) (1 + (((a) - 1) / (b)))
+
+#define UINT64_BITS (sizeof(uint64_t) * 8)
+
+enum {
+  // Calculate the size of the bitmap
+  BITMAP_SIZE = CEIL_DIV(WORLD_WIDTH * WORLD_HEIGHT, UINT64_BITS),
+};
+
+bool hasCellProcessed(uint64_t processed[BITMAP_SIZE], unsigned int x,
+                      unsigned int y) {
+  unsigned int a = y * WORLD_WIDTH + x;
+  unsigned int idx = a / UINT64_BITS;
+  unsigned int rem = a % UINT64_BITS;
+  uint64_t val = (processed[idx] >> rem) & 0x1;
+  return val == 1;
+}
+
+void setCellProcessed(uint64_t processed[BITMAP_SIZE], unsigned int x,
+                      unsigned int y, bool value) {
+  unsigned int a = y * WORLD_WIDTH + x;
+  unsigned int idx = a / UINT64_BITS;
+  unsigned int rem = a % UINT64_BITS;
+  processed[idx] = (processed[idx] & ~(1 << rem)) | (value << rem);
+}
+
 void worldTick() {
 
-  bool processed[WORLD_HEIGHT][WORLD_WIDTH] = {false};
+  // Bitmap
+  uint64_t processed[BITMAP_SIZE] = {false};
 
   // Handle blocks that fall down
   for (int y = 0; y < WORLD_HEIGHT; y++) {
     for (int x = 0; x < WORLD_WIDTH; x++) {
-      if (processed[y][x]) {
+      if (hasCellProcessed(processed, x, y)) {
         continue;
       }
 
@@ -53,8 +83,8 @@ void worldTick() {
         // Try falling straight down first
         if (IsPassible(below->type)) {
           swap(block, below);
-          processed[y - 1][x] = true;
-          processed[y][x] = true;
+          setCellProcessed(processed, x, y - 1, true);
+          setCellProcessed(processed, x, y, true);
           continue;
         }
 
@@ -70,8 +100,8 @@ void worldTick() {
           Block *above = getBlock(x, y + 1);
           if (above != NULL && IsPassible(above->type)) {
             swap(below, block);
-            processed[y - 1][x] = true;
-            processed[y][x] = true;
+            setCellProcessed(processed, x, y - 1, true);
+            setCellProcessed(processed, x, y, true);
             continue;
           }
 
@@ -89,21 +119,21 @@ void worldTick() {
           if (isLeftPassible && isRightPassible) {
             bool slideLeft = pcg32_bool();
             swap(slideLeft ? leftBlock : rightBlock, block);
-            processed[y - 1][x + (slideLeft ? -1 : 1)] = true;
-            processed[y - 1][x] = true;
-            processed[y][x] = true;
+            setCellProcessed(processed, x + (slideLeft ? -1 : 1), y - 1, true);
+            setCellProcessed(processed, x, y - 1, true);
+            setCellProcessed(processed, x, y, true);
             continue;
           } else if (isLeftPassible) {
             swap(leftBlock, block);
-            processed[y - 1][x - 1] = true;
-            processed[y - 1][x] = true;
-            processed[y][x] = true;
+            setCellProcessed(processed, x - 1, y - 1, true);
+            setCellProcessed(processed, x, y - 1, true);
+            setCellProcessed(processed, x, y, true);
             continue;
           } else if (isRightPassible) {
             swap(rightBlock, block);
-            processed[y - 1][x + 1] = true;
-            processed[y - 1][x] = true;
-            processed[y][x] = true;
+            setCellProcessed(processed, x + 1, y - 1, true);
+            setCellProcessed(processed, x, y - 1, true);
+            setCellProcessed(processed, x, y, true);
             continue;
           }
 
@@ -119,21 +149,21 @@ void worldTick() {
           if (isLeftPassible && isRightPassible) {
             bool slideLeft = pcg32_bool();
             swap(slideLeft ? leftBlock : rightBlock, block);
-            processed[y - 2][x + (slideLeft ? -1 : 1)] = true;
-            processed[y - 1][x] = true;
-            processed[y][x] = true;
+            setCellProcessed(processed, x + (slideLeft ? -1 : 1), y - 2, true);
+            setCellProcessed(processed, x, y - 1, true);
+            setCellProcessed(processed, x, y, true);
             continue;
           } else if (isLeftPassible) {
             swap(leftBlock, block);
-            processed[y - 2][x - 1] = true;
-            processed[y - 1][x] = true;
-            processed[y][x] = true;
+            setCellProcessed(processed, x - 1, y - 2, true);
+            setCellProcessed(processed, x, y - 1, true);
+            setCellProcessed(processed, x, y, true);
             continue;
           } else if (isRightPassible) {
             swap(rightBlock, block);
-            processed[y - 2][x + 1] = true;
-            processed[y - 1][x] = true;
-            processed[y][x] = true;
+            setCellProcessed(processed, x + 1, y - 2, true);
+            setCellProcessed(processed, x, y - 1, true);
+            setCellProcessed(processed, x, y, true);
             continue;
           }
 
@@ -149,28 +179,28 @@ void worldTick() {
           if (isLeftPassible && isRightPassible) {
             bool slideLeft = pcg32_bool();
             swap(slideLeft ? leftBlock : rightBlock, block);
-            processed[y][x + (slideLeft ? -1 : 1)] = true;
-            processed[y - 1][x] = true;
-            processed[y][x] = true;
+            setCellProcessed(processed, x + (slideLeft ? -1 : 1), y, true);
+            setCellProcessed(processed, x, y - 1, true);
+            setCellProcessed(processed, x, y, true);
             continue;
           } else if (isLeftPassible) {
             swap(leftBlock, block);
-            processed[y][x - 1] = true;
-            processed[y - 1][x] = true;
-            processed[y][x] = true;
+            setCellProcessed(processed, x - 1, y, true);
+            setCellProcessed(processed, x, y - 1, true);
+            setCellProcessed(processed, x, y, true);
             continue;
           } else if (isRightPassible) {
             swap(rightBlock, block);
-            processed[y][x + 1] = true;
-            processed[y - 1][x] = true;
-            processed[y][x] = true;
+            setCellProcessed(processed, x + 1, y, true);
+            setCellProcessed(processed, x, y - 1, true);
+            setCellProcessed(processed, x, y, true);
             continue;
           }
 
           // Last resort swap
           swap(below, block);
-          processed[y - 1][x] = true;
-          processed[y][x] = true;
+          setCellProcessed(processed, x, y - 1, true);
+          setCellProcessed(processed, x, y, true);
           continue;
         }
       }
@@ -190,18 +220,18 @@ void worldTick() {
         if (isLeftPassible && isRightPassible) {
           bool slideLeft = pcg32_bool();
           swap(slideLeft ? leftBlock : rightBlock, block);
-          processed[y - 1][x + (slideLeft ? -1 : 1)] = true;
-          processed[y][x] = true;
+          setCellProcessed(processed, x + (slideLeft ? -1 : 1), y - 1, true);
+          setCellProcessed(processed, x, y, true);
           continue;
         } else if (isLeftPassible) {
           swap(leftBlock, block);
-          processed[y - 1][x - 1] = true;
-          processed[y][x] = true;
+          setCellProcessed(processed, x - 1, y - 1, true);
+          setCellProcessed(processed, x, y, true);
           continue;
         } else if (isRightPassible) {
           swap(rightBlock, block);
-          processed[y - 1][x + 1] = true;
-          processed[y][x] = true;
+          setCellProcessed(processed, x + 1, y - 1, true);
+          setCellProcessed(processed, x, y, true);
           continue;
         }
       }
@@ -237,8 +267,8 @@ void worldTick() {
             swap(leftBlock, block);
             block->movementDir = leftDir;
             leftBlock->movementDir = currentDir;
-            processed[y][x - 1] = true;
-            processed[y][x] = true;
+            setCellProcessed(processed, x - 1, y, true);
+            setCellProcessed(processed, x, y, true);
             continue;
           } else if (block->movementDir == DIR_RIGHT) {
             Direction rightDir = rightBlock->movementDir;
@@ -246,8 +276,8 @@ void worldTick() {
             swap(rightBlock, block);
             block->movementDir = rightDir;
             rightBlock->movementDir = currentDir;
-            processed[y][x + 1] = true;
-            processed[y][x] = true;
+            setCellProcessed(processed, x + 1, y, true);
+            setCellProcessed(processed, x, y, true);
             continue;
           }
         }
@@ -259,7 +289,7 @@ void worldTick() {
   // TODO: Allow smoke to move diagonally
   for (int y = WORLD_HEIGHT - 1; y >= 0; y--) {
     for (int x = 0; x < WORLD_WIDTH; x++) {
-      if (processed[y][x]) {
+      if (hasCellProcessed(processed, x, y)) {
         continue;
       }
 
@@ -278,8 +308,8 @@ void worldTick() {
       if (IsGas(block->type) && IsPassible(above->type) &&
           block->type != above->type) {
         swap(block, above);
-        processed[y][x] = true;
-        processed[y + 1][x] = true;
+        setCellProcessed(processed, x, y + 1, true);
+        setCellProcessed(processed, x, y, true);
       }
     }
   }
