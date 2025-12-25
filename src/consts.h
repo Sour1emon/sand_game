@@ -1,7 +1,6 @@
 #pragma once
 
-#define const_min(a, b) ((a) < (b) ? (a) : (b))
-#define const_max(a, b) ((a) > (b) ? (a) : (b))
+#include "utils.h"
 
 #define TWO_THIRDS (2.0f / 3.0f)
 
@@ -19,8 +18,8 @@ enum {
   INTERFACE_HEIGHT = 200,
   INTERFACE_WIDTH = 600,
 
-  SCREEN_WIDTH = const_max(WORLD_WIDTH * PX_SCALE + WORLD_DISPLAY_PADDING * 2,
-                           INTERFACE_WIDTH),
+  SCREEN_WIDTH =
+      max(WORLD_WIDTH * PX_SCALE + WORLD_DISPLAY_PADDING * 2, INTERFACE_WIDTH),
   SCREEN_HEIGHT =
       WORLD_HEIGHT * PX_SCALE + WORLD_DISPLAY_PADDING * 2 + INTERFACE_HEIGHT,
 

@@ -29,8 +29,8 @@ void ProcessKeys(game_state *state) {
   if (IsKeyPressed(INCREASE_PLACE_WIDTH)) {
     // Make sure placeWidth is always odd. We want to limit the place width to
     // the screen size
-    state->placeWidth =
-        min(state->placeWidth + 2, EnsureOdd(min(WORLD_WIDTH, WORLD_HEIGHT)));
+    state->placeWidth = min(state->placeWidth + 2,
+                            EnsureOdd(min(WORLD_WIDTH, WORLD_HEIGHT) - 1));
   } else if (IsKeyPressed(DECREASE_PLACE_WIDTH)) {
     state->placeWidth = max(state->placeWidth - 2, 1);
   }
@@ -230,7 +230,7 @@ int main() {
   bool success = initFont();
 
   if (!success) {
-    // Don't continue if the fonts don't load
+    CloseWindow(); // Close window and clean up
     return 1;
   }
 

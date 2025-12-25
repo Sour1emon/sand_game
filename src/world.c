@@ -101,10 +101,6 @@ void worldTick() {
       Block *block = getBlock(x, y);
       Block *below = getBlock(x, y - 1);
 
-      if (block == NULL || below == NULL) {
-        continue;
-      }
-
       // Skip gases because they are handled later
       if (IsGas(block)) {
         continue;
@@ -229,6 +225,8 @@ void worldTick() {
             setCellProcessed(processed, x, y, true);
             continue;
           }
+        } else {
+          block->movementDir = DIR_NONE;
         }
       }
     }

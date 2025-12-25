@@ -5,27 +5,27 @@
 #include "utils.h"
 #include <stdio.h>
 
-bool HasGravity(Block *block) {
+bool HasGravity(const Block *block) {
   return block != NULL && HAS_PROPERTY(BLOCKS[block->type].props, HAS_GRAVITY);
 }
 
-bool IsPassible(Block *block) {
+bool IsPassible(const Block *block) {
   return block != NULL && HAS_PROPERTY(BLOCKS[block->type].props, IS_PASSIBLE);
 }
 
-bool CanSlide(Block *block) {
+bool CanSlide(const Block *block) {
   return block != NULL && HAS_PROPERTY(BLOCKS[block->type].props, CAN_SLIDE);
 }
 
-bool IsFluid(Block *block) {
+bool IsFluid(const Block *block) {
   return block != NULL && HAS_PROPERTY(BLOCKS[block->type].props, IS_FLUID);
 }
 
-bool IsGas(Block *block) {
-  return HAS_PROPERTY(BLOCKS[block->type].props, IS_GAS);
+bool IsGas(const Block *block) {
+  return block != NULL && HAS_PROPERTY(BLOCKS[block->type].props, IS_GAS);
 }
 
-Color GenBlockColor(enum BlockType type) {
+Color GenBlockColor(const enum BlockType type) {
   BlockDef b = BLOCKS[type];
   Color base = b.color;
   float h, s, l;

@@ -84,8 +84,8 @@ typedef struct {
   Direction movementDir;
 } Block;
 
-bool HasGravity(Block *block);
-bool IsPassible(Block *block);
-bool CanSlide(Block *block);
-bool IsFluid(Block *block);
-bool IsGas(Block *block);
+bool HasGravity(const Block *block);
+bool IsPassible(const Block *block);
+bool CanSlide(const Block *block);
+bool IsFluid(const Block *block);
+bool IsGas(const Block *block);
