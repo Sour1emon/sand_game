@@ -58,10 +58,17 @@ void drawWorld(game_state *state, int mouseX, int mouseY) {
         break;
       default:
         // This branch should never be reached
-        errx(EXIT_FAILURE,
-             "Found invalid block type %d at position (%d, %d) which "
-             "should never happen",
-             block->type, x, y);
+        fprintf(stderr,
+                "Found invalid block type %d at position (%d, %d) which "
+                "should never happen\n",
+                block->type, x, y);
+        // If we can't find the block, draw a checker board
+        int size = PX_SCALE / 2;
+        Color dark_blue = (Color){.r = 0, .g = 14, .b = 36, .a = 255};
+        DrawRectangle(screenX + size, screenY, size, size, dark_blue);
+        DrawRectangle(screenX + size, screenY + size, size, size, PURPLE);
+        DrawRectangle(screenX, screenY, size, size, PURPLE);
+        DrawRectangle(screenX, screenY + size, size, size, dark_blue);
         break;
       }
     }
@@ -199,6 +206,12 @@ void handleNonGameScreen(menu *currentMenu) {
   EndDrawing();
 }
 
+void cleanup() {
+  // Unload the fonts
+  UnloadFont(font);
+  UnloadFont(font_bold);
+}
+
 int main() {
 
   bool paused = false;
@@ -318,6 +331,8 @@ int main() {
 
     EndDrawing();
   }
+
+  cleanup();
 
   CloseWindow(); // Close window and clean up
 

@@ -28,9 +28,12 @@ enum {
   WORLD_SCREEN_TOP_LEFT_Y = WORLD_DISPLAY_PADDING,
   WORLD_SCREEN_BOTTOM_RIGHT_X = (SCREEN_WIDTH + WORLD_WIDTH * PX_SCALE) / 2,
   WORLD_SCREEN_BOTTOM_RIGHT_Y =
-      (WORLD_HEIGHT * PX_SCALE + WORLD_DISPLAY_PADDING)
+      (WORLD_HEIGHT * PX_SCALE + WORLD_DISPLAY_PADDING),
+
+  ERROR_CHECKERBOARD_WIDTH = 2,
 };
 
 #define GRID_LINE_COLOR ((Color){50, 50, 50, 255})
 
-#define AIR_BLOCK ((Block){.type = AIR, .color = {0, 0, 0, 0}, .movementDir = DIR_NONE})
+#define AIR_BLOCK                                                              \
+  ((Block){.type = AIR, .color = {0, 0, 0, 0}, .movementDir = DIR_NONE})

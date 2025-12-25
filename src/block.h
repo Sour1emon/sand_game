@@ -22,12 +22,6 @@ typedef enum {
 
 #define RGBA(r, g, b, a) ((Color){r, g, b, a})
 
-bool HasGravity(enum BlockType type);
-bool IsPassible(enum BlockType type);
-bool CanSlide(enum BlockType type);
-bool IsFluid(enum BlockType type);
-bool IsGas(enum BlockType type);
-
 Color GenBlockColor(enum BlockType type);
 
 typedef enum { DIR_NONE, DIR_LEFT, DIR_RIGHT } Direction;
@@ -89,3 +83,9 @@ typedef struct {
   // initialized, and hopefully never used
   Direction movementDir;
 } Block;
+
+bool HasGravity(Block *block);
+bool IsPassible(Block *block);
+bool CanSlide(Block *block);
+bool IsFluid(Block *block);
+bool IsGas(Block *block);

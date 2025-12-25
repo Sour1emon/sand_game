@@ -27,6 +27,10 @@ static inline void swap(Block *a, Block *b) {
   *b = temp;
 }
 
+static inline bool isPassibleBlock(Block *block) {
+  return block != NULL && IsPassible(block);
+}
+
 // Ceiling divide a by b
 // https://stackoverflow.com/a/2745086
 #define CEIL_DIV(a, b) (1 + (((a) - 1) / (b)))
@@ -57,6 +61,31 @@ void setCellProcessed(uint64_t processed[BITMAP_SIZE], unsigned int x,
   processed[idx] = (processed[idx] & ~(1ULL << rem)) | ((uint64_t)value << rem);
 }
 
+static bool trySwapWithCandidates(Block *block, int x, int y, Block *first,
+                                  bool firstPassible, int firstDx, int firstDy,
+                                  Block *second, bool secondPassible,
+                                  int secondDx, int secondDy,
+                                  uint64_t processed[BITMAP_SIZE],
+                                  bool markBelow) {
+  if (!firstPassible && !secondPassible) {
+    return false;
+  }
+
+  bool useFirst =
+      firstPassible && secondPassible ? pcg32_bool() : firstPassible;
+  Block *target = useFirst ? first : second;
+  int destX = x + (useFirst ? firstDx : secondDx);
+  int destY = y + (useFirst ? firstDy : secondDy);
+
+  swap(target, block);
+  setCellProcessed(processed, destX, destY, true);
+  if (markBelow) {
+    setCellProcessed(processed, x, y - 1, true);
+  }
+  setCellProcessed(processed, x, y, true);
+  return true;
+}
+
 void worldTick() {
 
   // Bitmap
@@ -77,13 +106,13 @@ void worldTick() {
       }
 
       // Skip gases because they are handled later
-      if (IsGas(block->type)) {
+      if (IsGas(block)) {
         continue;
       }
 
-      if (y > 0 && HasGravity(block->type)) {
+      if (y > 0 && HasGravity(block)) {
         // Try falling straight down first
-        if (IsPassible(below->type)) {
+        if (IsPassible(below)) {
           swap(block, below);
           setCellProcessed(processed, x, y - 1, true);
           setCellProcessed(processed, x, y, true);
@@ -91,111 +120,43 @@ void worldTick() {
         }
 
         // Check to see if the block below is water
-        if (!IsFluid(block->type) && IsFluid(below->type)) {
+        if (!IsFluid(block) && IsFluid(below)) {
           // Check which blocks are passible
           // Order: above -> side -> lower diagonal -> upper diagonal -> swap
           // (last resort)
           // TODO: Find a better last resort method because this might teleport
           // blocks up too far
 
-          // Check the block above the current one to see if it is passible
           Block *above = getBlock(x, y + 1);
-          if (above != NULL && IsPassible(above->type)) {
-            swap(below, block);
-            setCellProcessed(processed, x, y - 1, true);
-            setCellProcessed(processed, x, y, true);
+          if (trySwapWithCandidates(block, x, y, above, isPassibleBlock(above),
+                                    0, 1, NULL, false, 0, 0, processed, true)) {
             continue;
           }
 
-          // TODO: Move this code into a new function
-
-          // Check if the blocks next to the fluid are passible
           Block *leftBlock = getBlock(x - 1, y - 1);
-          bool isLeftPassible =
-              leftBlock != NULL ? IsPassible(leftBlock->type) : false;
-
           Block *rightBlock = getBlock(x + 1, y - 1);
-          bool isRightPassible =
-              rightBlock != NULL ? IsPassible(rightBlock->type) : false;
-
-          if (isLeftPassible && isRightPassible) {
-            bool slideLeft = pcg32_bool();
-            swap(slideLeft ? leftBlock : rightBlock, block);
-            setCellProcessed(processed, x + (slideLeft ? -1 : 1), y - 1, true);
-            setCellProcessed(processed, x, y - 1, true);
-            setCellProcessed(processed, x, y, true);
-            continue;
-          } else if (isLeftPassible) {
-            swap(leftBlock, block);
-            setCellProcessed(processed, x - 1, y - 1, true);
-            setCellProcessed(processed, x, y - 1, true);
-            setCellProcessed(processed, x, y, true);
-            continue;
-          } else if (isRightPassible) {
-            swap(rightBlock, block);
-            setCellProcessed(processed, x + 1, y - 1, true);
-            setCellProcessed(processed, x, y - 1, true);
-            setCellProcessed(processed, x, y, true);
+          if (trySwapWithCandidates(block, x, y, leftBlock,
+                                    isPassibleBlock(leftBlock), -1, -1,
+                                    rightBlock, isPassibleBlock(rightBlock), 1,
+                                    -1, processed, true)) {
             continue;
           }
 
-          // Check if the lower diagonals are passible
           leftBlock = getBlock(x - 1, y - 2);
-          isLeftPassible =
-              leftBlock != NULL ? IsPassible(leftBlock->type) : false;
-
           rightBlock = getBlock(x + 1, y - 2);
-          isRightPassible =
-              rightBlock != NULL ? IsPassible(rightBlock->type) : false;
-
-          if (isLeftPassible && isRightPassible) {
-            bool slideLeft = pcg32_bool();
-            swap(slideLeft ? leftBlock : rightBlock, block);
-            setCellProcessed(processed, x + (slideLeft ? -1 : 1), y - 2, true);
-            setCellProcessed(processed, x, y - 1, true);
-            setCellProcessed(processed, x, y, true);
-            continue;
-          } else if (isLeftPassible) {
-            swap(leftBlock, block);
-            setCellProcessed(processed, x - 1, y - 2, true);
-            setCellProcessed(processed, x, y - 1, true);
-            setCellProcessed(processed, x, y, true);
-            continue;
-          } else if (isRightPassible) {
-            swap(rightBlock, block);
-            setCellProcessed(processed, x + 1, y - 2, true);
-            setCellProcessed(processed, x, y - 1, true);
-            setCellProcessed(processed, x, y, true);
+          if (trySwapWithCandidates(block, x, y, leftBlock,
+                                    isPassibleBlock(leftBlock), -1, -2,
+                                    rightBlock, isPassibleBlock(rightBlock), 1,
+                                    -2, processed, true)) {
             continue;
           }
 
-          // Check if the upper diagonals are passible
           leftBlock = getBlock(x - 1, y);
-          isLeftPassible =
-              leftBlock != NULL ? IsPassible(leftBlock->type) : false;
-
           rightBlock = getBlock(x + 1, y);
-          isRightPassible =
-              rightBlock != NULL ? IsPassible(rightBlock->type) : false;
-
-          if (isLeftPassible && isRightPassible) {
-            bool slideLeft = pcg32_bool();
-            swap(slideLeft ? leftBlock : rightBlock, block);
-            setCellProcessed(processed, x + (slideLeft ? -1 : 1), y, true);
-            setCellProcessed(processed, x, y - 1, true);
-            setCellProcessed(processed, x, y, true);
-            continue;
-          } else if (isLeftPassible) {
-            swap(leftBlock, block);
-            setCellProcessed(processed, x - 1, y, true);
-            setCellProcessed(processed, x, y - 1, true);
-            setCellProcessed(processed, x, y, true);
-            continue;
-          } else if (isRightPassible) {
-            swap(rightBlock, block);
-            setCellProcessed(processed, x + 1, y, true);
-            setCellProcessed(processed, x, y - 1, true);
-            setCellProcessed(processed, x, y, true);
+          if (trySwapWithCandidates(block, x, y, leftBlock,
+                                    isPassibleBlock(leftBlock), -1, 0,
+                                    rightBlock, isPassibleBlock(rightBlock), 1,
+                                    0, processed, true)) {
             continue;
           }
 
@@ -208,39 +169,20 @@ void worldTick() {
       }
 
       // If can't fall straight, try sliding diagonally
-      if (CanSlide(block->type)) {
+      if (CanSlide(block)) {
         Block *leftBlock = getBlock(x - 1, y - 1);
         bool isLeftPassible =
-            leftBlock != NULL
-                ? (IsPassible(leftBlock->type) || IsFluid(leftBlock->type)) &&
-                      (IsPassible(_state.world[y][x - 1].type) ||
-                       IsFluid(_state.world[y][x - 1].type)) &&
-                      leftBlock->type != block->type
-                : false;
+            (IsPassible(leftBlock) || IsFluid(leftBlock)) &&
+            (IsPassible(getBlock(x - 1, y)) || IsFluid(getBlock(x - 1, y))) &&
+            leftBlock->type != block->type;
         Block *rightBlock = getBlock(x + 1, y - 1);
         bool isRightPassible =
-            rightBlock != NULL
-                ? (IsPassible(rightBlock->type) || IsFluid(rightBlock->type)) &&
-                      (IsPassible(_state.world[y][x + 1].type) ||
-                       IsFluid(_state.world[y][x + 1].type)) &&
-                      rightBlock->type != block->type
-                : false;
-
-        if (isLeftPassible && isRightPassible) {
-          bool slideLeft = pcg32_bool();
-          swap(slideLeft ? leftBlock : rightBlock, block);
-          setCellProcessed(processed, x + (slideLeft ? -1 : 1), y - 1, true);
-          setCellProcessed(processed, x, y, true);
-          continue;
-        } else if (isLeftPassible) {
-          swap(leftBlock, block);
-          setCellProcessed(processed, x - 1, y - 1, true);
-          setCellProcessed(processed, x, y, true);
-          continue;
-        } else if (isRightPassible) {
-          swap(rightBlock, block);
-          setCellProcessed(processed, x + 1, y - 1, true);
-          setCellProcessed(processed, x, y, true);
+            (IsPassible(rightBlock) || IsFluid(rightBlock)) &&
+            (IsPassible(getBlock(x + 1, y)) || IsFluid(getBlock(x + 1, y))) &&
+            rightBlock->type != block->type;
+        if (trySwapWithCandidates(block, x, y, leftBlock, isLeftPassible, -1,
+                                  -1, rightBlock, isRightPassible, 1, -1,
+                                  processed, false)) {
           continue;
         }
       }
@@ -248,14 +190,12 @@ void worldTick() {
       // Move fluids side to side
       // TODO: Fix weird fluid movement logic where going one direction it will
       // clump together but the other it will break apart
-      if (IsFluid(block->type)) {
+      if (IsFluid(block)) {
         Block *leftBlock = getBlock(x - 1, y);
-        bool isLeftPassible =
-            leftBlock != NULL ? IsPassible(leftBlock->type) : false;
+        bool isLeftPassible = IsPassible(leftBlock);
 
         Block *rightBlock = getBlock(x + 1, y);
-        bool isRightPassible =
-            rightBlock != NULL ? IsPassible(rightBlock->type) : false;
+        bool isRightPassible = IsPassible(rightBlock);
         // Make sure there is a place to move before doing other checks
         if (isLeftPassible || isRightPassible) {
 
@@ -305,17 +245,12 @@ void worldTick() {
       Block *block = getBlock(x, y);
       Block *above = getBlock(x, y + 1);
 
-      if (block == NULL || above == NULL) {
-        continue;
-      }
-
       // Skip non gases since they were handled earlier
-      if (!IsGas(block->type)) {
+      if (!IsGas(block)) {
         continue;
       }
 
-      if (IsGas(block->type) && IsPassible(above->type) &&
-          block->type != above->type) {
+      if (IsGas(block) && IsPassible(above) && block->type != above->type) {
         swap(block, above);
         setCellProcessed(processed, x, y + 1, true);
         setCellProcessed(processed, x, y, true);

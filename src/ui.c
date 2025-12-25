@@ -122,10 +122,15 @@ static Vector2 drawBlockPicker(game_state *state, int startX, int startY) {
 }
 
 static void drawBlockPlaceWidth(game_state *state, int startX, int startY) {
-  char *str;
-  asprintf(&str, "Block Place Width: %d", state->placeWidth);
-  DrawTextEx(font, str, (Vector2){startX, startY}, 20.0f, 0.0, RAYWHITE);
-  free(str);
+  static char buf[64];
+  static int lastWidth = -1;
+
+  if (state->placeWidth != lastWidth) {
+    lastWidth = state->placeWidth;
+    snprintf(buf, sizeof(buf), "Block Place Width: %d", lastWidth);
+  }
+
+  DrawTextEx(font, buf, (Vector2){startX, startY}, 20.0f, 0.0, RAYWHITE);
 }
 
 void drawInterface(game_state *state) {
