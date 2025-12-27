@@ -1,3 +1,6 @@
+// TODO: If gravel is placed on top of water, it bounces up and down, never
+// falling
+
 #include <err.h>
 #include <raylib.h>
 #include <stdint.h>
@@ -281,7 +284,7 @@ int main() {
 
     // The 0.98 is to give it a buffer, hopefully keeping the actual physics
     // fps closer to the target
-    if (timeSincePhysicsFrame >= (1.0 / PHYSICS_FPS) * 0.98 && !paused) {
+    if (timeSincePhysicsFrame >= (1.0 / PHYSICS_FPS) * 0.98 && (!paused || (paused && IsKeyPressed(KEY_PERIOD)))) {
       timeSincePhysicsFrame = 0.0;
 
       // Update the world

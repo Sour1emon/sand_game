@@ -124,9 +124,10 @@ void worldTick() {
           // blocks up too far
 
           Block *above = getBlock(x, y + 1);
-          if (trySwapWithCandidates(block, x, y, above, isPassibleBlock(above),
-                                    0, 1, NULL, false, 0, 0, processed, true)) {
-            continue;
+          if (isPassibleBlock(above)) {
+            swap(block, below);
+            setCellProcessed(processed, x, y, true);
+            setCellProcessed(processed, x, y - 1, true);
           }
 
           Block *leftBlock = getBlock(x - 1, y - 1);
